@@ -73,7 +73,6 @@ public class CreateLinkStrategy implements CanvasMouseStrategy { // 建立連線
         };
     }
 
-    public Point      getTempEnd()        { return tempEnd; }         // 取得目前預覽線終點（供畫布繪製使用）
     public BasicObject getSourceObject()  { return sourceObject; }    // 取得連線起點物件（供畫布繪製使用）
     public int        getSourcePortIndex(){ return sourcePortIndex; } // 取得連線起點 port 索引（供畫布繪製使用）
 }
