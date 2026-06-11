@@ -1,6 +1,6 @@
-# UML Editor — 架構圖
+# UML Editor — Refactored Architecture
 
-> 以下使用 Mermaid 圖表，可在 VSCode 安裝 **Markdown Preview Mermaid Support** 擴充套件後預覽。
+> 以下圖表使用 Mermaid。此文件描述目前實作架構：需求功能不變，但為了長期擴充性，將原本集中在 `CanvasPanel` 的模型資料、選取狀態、互動暫態、工具建立、繪製與 Command 操作拆成明確協作者。
 
 ---
 
@@ -9,145 +9,183 @@
 ```mermaid
 graph TB
     subgraph ENTRY["Entry Point"]
-        MAIN[Main\nFlatLight 主題 + EDT 啟動]
+        MAIN["Main<br>FlatLight 主題 + EDT 啟動"]
     end
 
-    subgraph UI["View 層 (com.uml.view)"]
-        MF[MainFrame\nJFrame + 選單列]
-        BP[ButtonPanel\n工具按鈕面板]
-        CP[CanvasPanel\n畫布 + 事件路由 + 模型持有者]
-        LD[LabelDialog\n標籤 / 顏色編輯對話框]
-        BDG[ButtonDragGlassPane\n按鈕拖拽玻璃層]
+    subgraph VIEW["View / Swing Adapter (com.uml.view)"]
+        MF["MainFrame<br>JFrame + menu bar"]
+        BP["ButtonPanel<br>工具按鈕面板"]
+        CP["CanvasPanel<br>事件路由 + repaint adapter"]
+        LD["LabelDialog<br>標籤 / 顏色編輯"]
+        CIS["CanvasInteractionState<br>hover / rubber band / temp link"]
     end
 
-    subgraph CTL["Controller 層 (com.uml.controller)"]
-        MM[ModeManager\n狀態機]
-        EM[EditorMode\n列舉：6 種模式]
-        MCL[ModeChangeListener\n觀察者介面]
-        subgraph STR["strategy 子包 (com.uml.controller.strategy)"]
-            CMS[CanvasMouseStrategy\n介面（default no-op）]
-            SS[SelectStrategy\n選取 / 移動 / 縮放]
-            COS[CreateObjectStrategy\n建立圖形]
-            CLS[CreateLinkStrategy\n建立連線 + buildLink 工廠]
+    subgraph RENDER["Renderer Layer (com.uml.view.renderer)"]
+        CRC["CanvasRenderContext<br>rendering context"]
+        DR["DiagramRenderer<br>整份 diagram 繪製"]
+        UOR["UMLObjectRenderer<br>object renderer"]
+        LR["LinkRenderer<br>link renderer"]
+        COR["CanvasOverlayRenderer<br>overlay renderer"]
+    end
+
+    subgraph TOOL["Tool System (com.uml.controller.tool)"]
+        ETR["EditorToolRegistry<br>集中註冊工具"]
+        ETD["EditorToolDefinition<br>工具定義"]
+        DOF["DiagramObjectFactory<br>建立 UMLObject"]
+        DLF["DiagramLinkFactory<br>建立 LinkObject"]
+    end
+
+    subgraph CTL["Controller (com.uml.controller)"]
+        MM["ModeManager<br>目前模式 + observer"]
+        EM["EditorMode<br>模式列舉"]
+        MCL["ModeChangeListener<br>模式變更觀察者"]
+        subgraph STR["Strategy (com.uml.controller.strategy)"]
+            CMS["CanvasMouseStrategy<br>滑鼠事件策略 + paintOverlay hook"]
+            SS["SelectStrategy<br>選取 / 移動 / 縮放 / 框選"]
+            COS["CreateObjectStrategy<br>透過 DiagramObjectFactory 建立圖形"]
+            CLS["CreateLinkStrategy<br>透過 DiagramLinkFactory 建立連線"]
         end
     end
 
-    subgraph CMD["Command 層 (com.uml.command)"]
-        CI[Command 介面\nundo / redo]
-        CH[CommandHistory\nmax 50，雙堆疊]
-        COC[CreateObjectCommand]
-        CLC[CreateLinkCommand]
-        MOC[MoveObjectsCommand\nMap before / after]
-        ROC[ResizeObjectCommand\n前後 bounds]
-        GC[GroupCommand]
-        UGC[UngroupCommand]
-        SLC[SetLabelCommand\n名稱 + 顏色]
+    subgraph CMD["Command (com.uml.command)"]
+        CI["Command<br>undo / redo"]
+        CH["CommandHistory<br>undo / redo stacks"]
+        COC["CreateObjectCommand"]
+        CLC["CreateLinkCommand"]
+        MOC["MoveObjectsCommand"]
+        ROC["ResizeObjectCommand"]
+        GC["GroupCommand<br>保留 z-order snapshot"]
+        UGC["UngroupCommand<br>保留 composite index"]
+        SLC["SetLabelCommand"]
     end
 
-    subgraph MDL["Model 層 (com.uml.model)"]
-        UO[UMLObject\n抽象基底]
-        BO[BasicObject\n抽象形狀 + ResizeConstraint]
-        RO[RectObject\n矩形 8 端口]
-        OO[OvalObject\n橢圓 4 端口]
-        CO[CompositeObject\n群組容器]
-        subgraph LNK["link 子包 (com.uml.model.link)"]
-            LO[LinkObject\n抽象連線]
-            AL[AssociationLink\n實心三角]
-            GL[GeneralizationLink\n空心三角]
-            CML[CompositionLink\n實心菱形]
+    subgraph MODEL["Model (com.uml.model)"]
+        DOC["DiagramDocument<br>objects / links / z-order"]
+        SEL["DiagramSelectionModel<br>selection state"]
+        UO["UMLObject<br>抽象 UML 物件"]
+        BO["BasicObject<br>基礎圖形"]
+        PO["PortOwner<br>可提供 ports 的能力"]
+        PR["PortReference<br>owner + portIndex"]
+        RO["RectObject"]
+        OO["OvalObject"]
+        CO["CompositeObject"]
+        subgraph LNK["Link Model (com.uml.model.link)"]
+            LO["LinkObject<br>PortReference endpoints"]
+            AL["AssociationLink"]
+            GL["GeneralizationLink"]
+            CML["CompositionLink"]
         end
     end
 
-    subgraph UTL["Util 層 (com.uml.util)"]
-        UC[UMLConstants\n常數定義]
-        HTU[HitTestUtil\n碰撞偵測]
+    subgraph UTIL["Util (com.uml.util)"]
+        UC["UMLConstants"]
+        HTU["HitTestUtil"]
     end
 
     MAIN --> MF
     MF --> BP
     MF --> CP
     MF --> LD
-    MF --> BDG
-    BP -.->|實作| MCL
-    BDG -->|simulateRelease| CP
-    MM -->|通知| MCL
-    CP -->|委派滑鼠事件| CMS
-    CMS -.->|實作| SS
-    CMS -.->|實作| COS
-    CMS -.->|實作| CLS
-    CP -->|execute / pushHistory| CH
-    CH -->|push / undo / redo| CI
-    CI -.->|實作| COC & CLC & MOC & ROC & GC & UGC & SLC
-    SS & COS & CLS -->|rawAdd / rawRemove / moveTo| MDL
-    UO --> BO & CO
-    BO --> RO & OO
-    LO --> AL & GL & CML
-    CP -->|查詢| HTU
+    MF --> ETR
+    BP --> ETR
+    CP --> ETR
+    ETR --> ETD
+    ETD --> DOF
+    ETD --> DLF
+
+    MM --> MCL
+    BP -.implements.-> MCL
+    CP --> CMS
+    CMS --> CIS
+    CMS -.-> COS
+    CMS -.-> COC
+    CI --> MOC
+    CI --> GC
+    CI --> SLC
+    CH --> CI
+    COC --> DOC
+    COC --> SEL
+    MOC --> DOC
+    MOC --> SEL
+    ROC --> DOC
+    ROC --> SEL
+    GC --> DOC
+    GC --> SEL
+    UGC --> DOC
+    UGC --> SEL
+    SLC --> DOC
+    SLC --> SEL
+
+    DOC --> UO
+    DOC --> LO
+    SEL --> DOC
+    UO --> CO
+    BO --> OO
+    PO --> AL
+    LO --> CML
 ```
 
 ---
 
-## 2. 設計模式總覽
-
-```mermaid
-graph LR
-    ROOT["設計模式"]
-
-    ROOT --> P1["Composite\n組合模式"]
-    P1 --> P1A["UMLObject 抽象基底"]
-    P1 --> P1B["BasicObject 葉節點\nRectObject / OvalObject"]
-    P1 --> P1C["CompositeObject 容器\n遞迴 draw / move / contains"]
-
-    ROOT --> P2["Strategy\n策略模式"]
-    P2 --> P2A["CanvasMouseStrategy 介面\n(default no-op 方法)"]
-    P2 --> P2B["SelectStrategy\nIDLE / DRAGGING_OBJECT / RESIZING / RUBBER_BANDING"]
-    P2 --> P2C["CreateObjectStrategy"]
-    P2 --> P2D["CreateLinkStrategy"]
-    P2 --> P2E["CanvasPanel.strategyMap\n依模式動態切換"]
-
-    ROOT --> P3["Command\n命令模式"]
-    P3 --> P3A["Command 介面 undo / redo"]
-    P3 --> P3B["CommandHistory 雙堆疊 max 50"]
-    P3 --> P3C["execute(cmd) — 呼叫 redo 後 push"]
-    P3 --> P3D["pushHistory(cmd) — 直接 push（漸進操作）"]
-
-    ROOT --> P4["Observer\n觀察者模式"]
-    P4 --> P4A["ModeManager 發佈者"]
-    P4 --> P4B["ModeChangeListener 介面"]
-    P4 --> P4C["ButtonPanel 訂閱者\n高亮現用模式按鈕"]
-
-    ROOT --> P5["Template Method\n樣板方法"]
-    P5 --> P5A["BasicObject.draw 骨架\ndrawShape / drawPorts / drawLabel"]
-    P5 --> P5B["LinkObject.draw 骨架\ndrawArrowHead 子類實作"]
-
-    ROOT --> P6["State\n狀態模式"]
-    P6 --> P6A["ModeManager\n全域 6 種模式"]
-    P6 --> P6B["SelectStrategy 子狀態\nIDLE / DRAGGING_OBJECT / RESIZING / RUBBER_BANDING"]
-
-    ROOT --> P7["Factory Method\n工廠方法"]
-    P7 --> P7A["CreateLinkStrategy.buildLink()"]
-    P7 --> P7B["依 EditorMode 建立\nAssociationLink / GeneralizationLink / CompositionLink"]
-```
-
----
-
-## 3. 類別關係圖（Class Diagram）
+## 2. 核心類別關係（Class Diagram）
 
 ```mermaid
 classDiagram
+    class DiagramDocument {
+        -List~UMLObject~ objects
+        -List~LinkObject~ links
+        +getObjects() List~UMLObject~
+        +getLinks() List~LinkObject~
+        +addObject(UMLObject)
+        +addObjectAt(int, UMLObject)
+        +removeObject(UMLObject) boolean
+        +indexOfObject(UMLObject) int
+        +bringToFront(UMLObject)
+        +findObjectAt(int, int) UMLObject
+        +findPortOwnerNearPort(int, int) PortOwner
+        +findPortReferenceNearPoint(Point) PortReference
+    }
+
+    class DiagramSelectionModel {
+        -DiagramDocument document
+        -Set~UMLObject~ selectedObjects
+        +selectOnly(UMLObject)
+        +selectAll(Collection)
+        +addToSelection(UMLObject)
+        +clearSelection()
+        +isSelected(UMLObject) boolean
+        +getSelectedObjects() List~UMLObject~
+    }
+
+    class CanvasInteractionState {
+        -UMLObject hoveredObject
+        -Rectangle rubberBand
+        -PortReference temporaryLinkSource
+        -Point temporaryLinkEnd
+        +setHoveredObject(UMLObject)
+        +setRubberBand(Rectangle)
+        +setTemporaryLink(PortReference, Point)
+        +clearTemporaryLink()
+    }
+
     class UMLObject {
         <<abstract>>
-        -int depth
         -boolean selected
         -boolean hovered
         -String labelName
         -Color labelColor
         +draw(Graphics2D)*
-        +contains(int,int) boolean*
+        +contains(int, int) boolean*
         +getBounds() Rectangle*
-        +move(int,int)*
-        +moveTo(int,int)*
-        +getters/setters()
+        +move(int, int)*
+        +moveTo(int, int)*
+    }
+
+    class PortOwner {
+        <<interface>>
+        +getPort(int) Point
+        +getNearestPortIndex(Point) int
+        +getBounds() Rectangle
     }
 
     class BasicObject {
@@ -162,334 +200,389 @@ classDiagram
         +getNearestPortIndex(Point) int
         +getResizeConstraint(int) ResizeConstraint
         +getResizeAnchor(int) Point
-        +setBounds(int,int,int,int)
-        +draw(Graphics2D)
-        #drawShape(Graphics2D)*
+        +setBounds(int, int, int, int)
         #computePorts() List~Point~*
-        -drawPorts(Graphics2D)
-        -drawLabel(Graphics2D)
+        #drawShape(Graphics2D)*
     }
 
-    class ResizeConstraint {
-        <<enumeration>>
-        NONE
-        LOCK_WIDTH
-        LOCK_HEIGHT
+    class PortReference {
+        <<record>>
+        +PortOwner owner
+        +int portIndex
+        +getPoint() Point
     }
 
-    class RectObject {
-        +computePorts() List~Point~
-        +getResizeConstraint(int) ResizeConstraint
-        +getResizeAnchor(int) Point
-        +drawShape(Graphics2D)
-    }
-
-    class OvalObject {
-        +computePorts() List~Point~
-        +contains(int,int) boolean
-        +getResizeConstraint(int) ResizeConstraint
-        +getResizeAnchor(int) Point
-        +drawShape(Graphics2D)
+    class LinkObject {
+        <<abstract>>
+        -PortReference source
+        -PortReference target
+        +draw(Graphics2D)
+        +getSourceReference() PortReference
+        +getTargetReference() PortReference
+        #drawArrowHead(Graphics2D, Point, Point)*
     }
 
     class CompositeObject {
         -List~UMLObject~ children
         +getDirectChildren() List~UMLObject~
-        +getBounds() Rectangle
         +draw(Graphics2D)
-        +move(int,int)
-        +moveTo(int,int)
-        +addChild(UMLObject)
-        +removeChild(UMLObject)
+        +move(int, int)
+        +moveTo(int, int)
     }
 
-    class LinkObject {
-        <<abstract>>
-        #BasicObject source
-        #int sourcePortIndex
-        #BasicObject target
-        #int targetPortIndex
-        +draw(Graphics2D)
-        #drawArrowHead(Graphics2D,Point,Point)*
-        -angle(Point,Point) double
-        +getSource() BasicObject
-        +getTarget() BasicObject
-    }
-
-    class AssociationLink {
-        +drawArrowHead() 實心三角
-    }
-
-    class GeneralizationLink {
-        +drawArrowHead() 空心三角
-    }
-
-    class CompositionLink {
-        +drawArrowHead() 實心菱形
-    }
-
-    class CanvasMouseStrategy {
-        <<interface>>
-        +onPressed(MouseEvent, CanvasPanel)
-        +onDragged(MouseEvent, CanvasPanel)
-        +onReleased(MouseEvent, CanvasPanel)
-        +onMoved(MouseEvent, CanvasPanel)
-        +onClicked(MouseEvent, CanvasPanel)
-    }
-
-    class SelectStrategy {
-        -SubState subState
-        -Point pressPoint
-        -UMLObject dragTarget
-        -int resizePort
-        -Point fixedAnchor
-        -Map~UMLObject,Point~ moveBefore
-    }
-
-    class CreateObjectStrategy {
-        -EditorMode objectMode
-        -ModeManager modeManager
-    }
-
-    class CreateLinkStrategy {
-        -EditorMode linkMode
-        -BasicObject sourceObject
-        -int sourcePortIndex
-        -Point tempEnd
-        -buildLink(BasicObject,int,BasicObject,int) LinkObject
-    }
-
-    class Command {
-        <<interface>>
-        +undo()
-        +redo()
-    }
-
-    class CommandHistory {
-        -Deque~Command~ undoStack
-        -Deque~Command~ redoStack
-        -MAX_HISTORY = 50
-        +push(Command)
-        +undo()
-        +redo()
-        +canUndo() boolean
-        +canRedo() boolean
-    }
-
-    class ModeManager {
-        -EditorMode currentMode
-        -EditorMode previousMode
-        -List~ModeChangeListener~ listeners
-        +setMode(EditorMode)
-        +restorePreviousMode()
-        +getCurrentMode() EditorMode
-        +addListener(ModeChangeListener)
-    }
-
-    class ModeChangeListener {
-        <<interface>>
-        +onModeChanged(EditorMode, EditorMode)
-    }
-
-    class CanvasPanel {
-        -List~UMLObject~ objects
-        -List~LinkObject~ links
-        -CanvasMouseStrategy currentStrategy
-        -Map~EditorMode,CanvasMouseStrategy~ strategyMap
-        -CommandHistory history
-        -Rectangle rubberBand
-        +execute(Command)
-        +pushHistory(Command)
-        +rawAddObject(UMLObject)
-        +rawRemoveObject(UMLObject)
-        +rawAddLink(LinkObject)
-        +rawRemoveLink(LinkObject)
-        +group()
-        +ungroup()
-        +findObjectAt(int,int) UMLObject
-        +findBasicObjectNearPort(int,int) BasicObject
-        +simulateRelease(int,int)
-    }
-
-    class ButtonPanel {
-        -Map~EditorMode,JLabel~ buttons
-        +onModeChanged(EditorMode, EditorMode)
-    }
-
-    class ButtonDragGlassPane {
-        -CanvasPanel canvas
-        +activate()
-        -deactivate()
-    }
-
+    DiagramDocument --> UMLObject
+    DiagramDocument --> LinkObject
+    DiagramSelectionModel --> DiagramDocument
+    CanvasInteractionState --> PortReference
     UMLObject <|-- BasicObject
     UMLObject <|-- CompositeObject
     BasicObject <|-- RectObject
     BasicObject <|-- OvalObject
-    BasicObject ..> ResizeConstraint : uses
-    LinkObject --> BasicObject : source / target
+    PortOwner <|.. BasicObject
+    LinkObject --> PortReference
+    PortReference --> PortOwner
     LinkObject <|-- AssociationLink
     LinkObject <|-- GeneralizationLink
     LinkObject <|-- CompositionLink
-    CanvasMouseStrategy <|.. SelectStrategy
-    CanvasMouseStrategy <|.. CreateObjectStrategy
-    CanvasMouseStrategy <|.. CreateLinkStrategy
-    Command <|.. CreateObjectCommand
-    Command <|.. CreateLinkCommand
-    Command <|.. MoveObjectsCommand
-    Command <|.. ResizeObjectCommand
-    Command <|.. GroupCommand
-    Command <|.. UngroupCommand
-    Command <|.. SetLabelCommand
-    CommandHistory --> Command : manages
-    ModeManager --> ModeChangeListener : notifies
-    ModeChangeListener <|.. ButtonPanel
-    CanvasPanel --> CommandHistory : owns
-    CanvasPanel --> CanvasMouseStrategy : delegates
-    ButtonDragGlassPane --> CanvasPanel : simulateRelease
 ```
 
 ---
 
-## 4. 核心流程：滑鼠事件路由
+## 3. 工具註冊與模式切換（Tool Registry Flow）
+
+`EditorToolRegistry` 是工具系統的唯一來源。`ButtonPanel` 用它建立按鈕，`CanvasPanel` 用它建立 strategy map，因此新增工具不需要分散修改 UI 與 canvas。
+
+```mermaid
+sequenceDiagram
+    participant MF as MainFrame
+    participant Registry as EditorToolRegistry
+    participant BP as ButtonPanel
+    participant CP as CanvasPanel
+    participant MM as ModeManager
+    participant Strategy as CanvasMouseStrategy
+
+    MF->>Registry: createDefault()
+    MF->>CP: new(modeManager, registry)
+    CP->>Registry: createStrategyMap(modeManager)
+    Registry-->>CP: Map<EditorMode, CanvasMouseStrategy>
+    MF->>BP: new(modeManager, canvas, registry)
+    BP->>Registry: getDefinitions()
+    Registry-->>BP: List<EditorToolDefinition>
+    BP->>BP: create labels and icon buttons
+
+    BP->>MM: setMode(mode)
+    MM-->>BP: onModeChanged(newMode, prevMode)
+    MM-->>CP: onModeChanged(newMode, prevMode)
+    CP->>CP: currentStrategy = strategyMap.get(newMode)
+    CP->>Strategy: route mouse events
+```
+
+---
+
+## 4. 繪製流程（Rendering Pipeline）
+
+`CanvasPanel` 不直接繪製 diagram 細節。它建立 `CanvasRenderContext` 後，委派給 `DiagramRenderer` 畫物件與連線，再由 `CanvasOverlayRenderer` 呼叫目前 strategy 的 `paintOverlay`。
+
+```mermaid
+sequenceDiagram
+    participant Swing
+    participant CP as CanvasPanel
+    participant Context as CanvasRenderContext
+    participant DR as DiagramRenderer
+    participant OR as UMLObjectRenderer
+    participant LR as LinkRenderer
+    participant Overlay as CanvasOverlayRenderer
+    participant Strategy as CanvasMouseStrategy
+
+    Swing->>CP: paintComponent(Graphics)
+    CP->>Context: new(document, selectionModel, interactionState)
+    CP->>DR: render(g2d, context)
+    DR->>OR: render each UMLObject
+    OR->>OR: object.draw(g2d)
+    DR->>LR: render each LinkObject
+    LR->>LR: link.draw(g2d)
+    CP->>Overlay: render(g2d, context, currentStrategy)
+    Overlay->>Strategy: paintOverlay(g2d, context)
+```
+
+---
+
+## 5. 建立物件流程（Create Object）
 
 ```mermaid
 sequenceDiagram
     participant User
-    participant CanvasPanel
-    participant ModeManager
-    participant Strategy as 當前 Strategy
-    participant Command
-    participant Model
+    participant CP as CanvasPanel
+    participant Strategy as CreateObjectStrategy
+    participant Factory as DiagramObjectFactory
+    participant Cmd as CreateObjectCommand
+    participant Doc as DiagramDocument
+    participant Sel as DiagramSelectionModel
+    participant Hist as CommandHistory
 
-    User->>CanvasPanel: MouseEvent (按下/拖曳/放開)
-    CanvasPanel->>ModeManager: getCurrentMode()
-    ModeManager-->>CanvasPanel: EditorMode
-    CanvasPanel->>Strategy: onPressed / onDragged / onReleased
-    Strategy->>Model: 讀取 / 修改物件
-    Strategy->>Command: new XxxCommand(before, after)
-    alt 建立操作（Create）
-        Strategy->>CanvasPanel: execute(cmd)
-        CanvasPanel->>Command: redo()
-        Command->>Model: 套用變更
-        CanvasPanel->>CanvasPanel: history.push(cmd)
-    else 漸進操作（Move / Resize）
-        Strategy->>CanvasPanel: pushHistory(cmd)
-        CanvasPanel->>CanvasPanel: history.push(cmd)
-    end
-    CanvasPanel->>CanvasPanel: repaint()
+    User->>CP: mouseReleased
+    CP->>Strategy: onReleased(event, canvas)
+    Strategy->>Factory: create(x, y, width, height)
+    Factory-->>Strategy: UMLObject
+    Strategy->>CP: execute(CreateObjectCommand)
+    CP->>Cmd: redo()
+    Cmd->>Doc: addObject(created)
+    Cmd->>Sel: selectOnly(created)
+    CP->>Hist: push(command)
+    CP->>CP: repaint()
 ```
 
 ---
 
-## 5. 按鈕拖拽建立物件（ButtonDragGlassPane 流程）
+## 6. 建立連線流程（Create Link）
 
 ```mermaid
 sequenceDiagram
     participant User
-    participant ButtonPanel
-    participant ModeManager
-    participant ButtonDragGlassPane
-    participant CanvasPanel
-    participant CreateObjectStrategy
+    participant CP as CanvasPanel
+    participant Strategy as CreateLinkStrategy
+    participant State as CanvasInteractionState
+    participant Doc as DiagramDocument
+    participant Factory as DiagramLinkFactory
+    participant Cmd as CreateLinkCommand
 
-    User->>ButtonPanel: mousePressed on tool button
-    ButtonPanel->>ModeManager: setMode(RECT / OVAL)
-    ModeManager-->>ButtonPanel: onModeChanged (highlight)
-    ButtonPanel->>ButtonDragGlassPane: activate()
-    Note over ButtonDragGlassPane: 透明覆蓋層截取全視窗事件
-    User->>ButtonDragGlassPane: mouseReleased (on canvas area)
-    ButtonDragGlassPane->>CanvasPanel: simulateRelease(x, y)
-    CanvasPanel->>CreateObjectStrategy: onReleased(e, canvas)
-    CreateObjectStrategy->>CanvasPanel: execute(CreateObjectCommand)
-    CreateObjectStrategy->>ModeManager: restorePreviousMode()
-    CanvasPanel->>CanvasPanel: repaint()
+    User->>CP: mousePressed on source port
+    CP->>Strategy: onPressed(event, canvas)
+    Strategy->>Doc: findPortReferenceNearPoint(point)
+    Doc-->>Strategy: source PortReference
+    Strategy->>State: setTemporaryLink(source, point)
+
+    User->>CP: mouseDragged
+    CP->>Strategy: onDragged(event, canvas)
+    Strategy->>State: setTemporaryLink(source, currentPoint)
+    CP->>CP: repaint()
+
+    User->>CP: mouseReleased on target port
+    CP->>Strategy: onReleased(event, canvas)
+    Strategy->>State: clearTemporaryLink()
+    Strategy->>Doc: findPortReferenceNearPoint(point)
+    Doc-->>Strategy: target PortReference
+    Strategy->>Factory: create(source, target)
+    Factory-->>Strategy: LinkObject
+    Strategy->>CP: execute(CreateLinkCommand)
+    Cmd->>Doc: addLink(link)
 ```
 
 ---
 
-## 6. 兩種 Command 執行路徑
+## 7. 選取模式狀態機（Select Strategy State）
+
+```mermaid
+stateDiagram-v2
+    [*] --> IDLE
+    IDLE --> RESIZING: mousePressed on selected BasicObject port
+    IDLE --> DRAGGING_OBJECT: mousePressed on object
+    IDLE --> RUBBER_BANDING: mousePressed on empty area
+
+    RESIZING --> RESIZING: mouseDragged / BasicObject.setBounds()
+    RESIZING --> IDLE: mouseReleased / push ResizeObjectCommand
+
+    DRAGGING_OBJECT --> DRAGGING_OBJECT: mouseDragged / move selected objects
+    DRAGGING_OBJECT --> IDLE: mouseReleased / push MoveObjectsCommand
+
+    RUBBER_BANDING --> RUBBER_BANDING: mouseDragged / CanvasInteractionState.rubberBand
+    RUBBER_BANDING --> IDLE: mouseReleased / DiagramSelectionModel.addToSelection()
+```
+
+---
+
+## 8. Command 與 Undo/Redo
+
+Command 不再操作 `CanvasPanel.rawAddObject()` 之類的 view adapter API。Command 只修改 `DiagramDocument`，必要時更新 `DiagramSelectionModel`。`CanvasPanel` 負責統一 `repaint()`。
+
+```mermaid
+sequenceDiagram
+    participant UI as CanvasPanel / MainFrame
+    participant Cmd as Command
+    participant Hist as CommandHistory
+    participant Doc as DiagramDocument
+    participant Sel as DiagramSelectionModel
+
+    UI->>Cmd: redo()
+    Cmd->>Doc: mutate structural state
+    Cmd->>Sel: update selection if needed
+    UI->>Hist: push(command)
+    UI->>UI: repaint()
+
+    UI->>Hist: undo()
+    Hist->>Cmd: undo()
+    Cmd->>Doc: restore structural state
+    Cmd->>Sel: restore selection if needed
+    UI->>UI: repaint()
+
+    UI->>Hist: redo()
+    Hist->>Cmd: redo()
+    Cmd->>Doc: reapply structural state
+    Cmd->>Sel: restore selection if needed
+    UI->>UI: repaint()
+```
+
+---
+
+## 9. Group / Ungroup 的 z-order 還原
+
+群組時會記錄每個 child 的原始 index，並把 composite 插到被群組物件中最高層的位置。undo 時 children 回原本 z-order；redo 時 composite 回記錄位置。解群組時則記錄 composite index，children 從該位置展開。
 
 ```mermaid
 flowchart LR
-    subgraph P1["路徑 A：建立操作（Create）"]
-        A1[Strategy 建立 Command] --> A2[canvas.execute cmd]
-        A2 --> A3[cmd.redo 套用變更]
-        A3 --> A4[history.push 推入 undoStack]
+    subgraph Before["Before group"]
+        A1["0: A"]
+        B1["1: B selected"]
+        C1["2: C"]
+        D1["3: D selected"]
     end
 
-    subgraph P2["路徑 B：漸進操作（Move / Resize）"]
-        B1[onPressed 快照 before\n記錄 Map / bounds] --> B2[onDragged 即時更新 Model]
-        B2 --> B3[onReleased 快照 after]
-        B3 --> B4{有實際變化?}
-        B4 -->|是| B5[canvas.pushHistory cmd]
-        B5 --> B6[history.push 推入 undoStack\n不重複 redo]
-        B4 -->|否| B7[捨棄，不記錄]
+    subgraph Redo["After group redo"]
+        A2["0: A"]
+        C2["1: C"]
+        G2["2: Composite(B,D)"]
     end
 
-    style P1 fill:#e8f4e8
-    style P2 fill:#e8f0f8
+    subgraph Undo["After group undo"]
+        A3["0: A"]
+        B3["1: B"]
+        C3["2: C"]
+        D3["3: D"]
+    end
+
+    Before --> Redo
+    Redo --> Undo
 ```
 
 ---
 
-## 7. 端口（Port）系統與連線動態追蹤
+## 10. 擴充點（Extension Points）
 
 ```mermaid
-flowchart TD
-    subgraph PORT["BasicObject 端口系統"]
-        P1["computePorts()\n計算絕對座標"]
-        P2[portsCache 快取]
-        P3["move() / setBounds()\n使快取失效 portsCache=null"]
-        P4["getNearestPortIndex()\nChebyshev 距離命中測試"]
-        P1 --> P2 --> P3 --> P1
-        P2 --> P4
-    end
-
-    subgraph CON["ResizeConstraint 軸鎖定"]
-        RC1["RectObject 邊中點\nLOCK_WIDTH / LOCK_HEIGHT"]
-        RC2["OvalObject 上下端口\nLOCK_WIDTH"]
-        RC3["OvalObject 左右端口\nLOCK_HEIGHT"]
-        RC4["四角端口\nNONE（自由縮放）"]
-    end
-
-    subgraph LINK["LinkObject 動態繪製"]
-        L1[儲存 source 物件參考 + sourcePortIndex]
-        L2[儲存 target 物件參考 + targetPortIndex]
-        L3["draw() 呼叫\nsource.getPort(sourcePortIndex)"]
-        L4["draw() 呼叫\ntarget.getPort(targetPortIndex)"]
-        L5[繪製連線 + 箭頭]
-        L1 --> L3 --> L5
-        L2 --> L4 --> L5
-    end
-
-    PORT -->|物件移動後端口自動更新| LINK
-    CON -->|約束 SelectStrategy.applyResize| PORT
+mindmap
+  root((UML Editor Extension Points))
+    New Shape
+      Create UMLObject or BasicObject subclass
+      Implement PortOwner if linkable
+      Add EditorToolDefinition
+      Provide DiagramObjectFactory
+    New Link Type
+      Keep LinkObject subclass
+      Provide DiagramLinkFactory
+      Add EditorToolDefinition
+    New Interaction Mode
+      Implement CanvasMouseStrategy
+      Override paintOverlay if needed
+      Register in EditorToolRegistry
+    Save Load
+      Serialize DiagramDocument
+      Keep CanvasInteractionState transient
+      Decide whether selection is saved
+    Renderer Replacement
+      Replace DiagramRenderer collaborators
+      Keep DiagramDocument unchanged
 ```
 
 ---
 
-## 8. Use Case 對應實作
+## 11. 實做設計理由與取捨
 
-```mermaid
-flowchart LR
-    UC_A["UC-A\n建立形狀"] --> BDG_A[ButtonDragGlassPane\nsimulateRelease]
-    BDG_A --> COS[CreateObjectStrategy\n.onReleased]
-    UC_B["UC-B\n建立連線"] --> CLS[CreateLinkStrategy\n.onPressed/Dragged/Released\n+ buildLink 工廠]
-    UC_C["UC-C\n選取物件"] --> SS_Click[SelectStrategy\n.onClicked / onMoved hover]
-    UC_D_G["UC-D\n群組"] --> GP["CanvasPanel.group()\nMainFrame 選單"]
-    UC_D_UG["UC-D\n解群組"] --> UGP["CanvasPanel.ungroup()\nMainFrame 選單"]
-    UC_E["UC-E\n移動物件"] --> SS_Drag[SelectStrategy\n.onDragged DRAGGING_OBJECT]
-    UC_F["UC-F\n縮放形狀"] --> SS_Resize[SelectStrategy\n.onDragged RESIZING\napplyResize + ResizeConstraint]
-    UC_G["UC-G\n設定標籤"] --> LD_G[LabelDialog\n名稱 + 顏色]
+### 11.1 `DiagramDocument`：分離 Document Model 與 Swing View
 
-    COS --> COC[CreateObjectCommand]
-    CLS --> CLC[CreateLinkCommand]
-    SS_Drag --> MOC[MoveObjectsCommand\nMap before/after]
-    SS_Resize --> ROC[ResizeObjectCommand\nbounds before/after]
-    GP --> GCM[GroupCommand]
-    UGP --> UGCM[UngroupCommand]
-    LD_G --> SLCM[SetLabelCommand\n名稱 + Color]
+過去 `CanvasPanel` 同時持有 objects、links、z-order、hit-test、Command raw mutation。這讓畫布元件變成 model repository，也讓 undo/redo、save/load、測試都必須繞過 Swing。
 
-    COC & CLC & MOC & ROC & GCM & UGCM & SLCM --> CH[CommandHistory\npush / undo / redo\nmax 50]
-```
+現在 `DiagramDocument` 負責 diagram 結構資料。好處是：
+
+- `CanvasPanel` 可以回到 Swing adapter 的角色。
+- Command 可以直接測試，不需要建立視窗。
+- 未來 save/load 有明確入口。
+- z-order 操作集中，group/ungroup undo 才能穩定還原順序。
+
+取捨是多一個 document 類別，對小型程式短期看起來較重；但這個抽象對 editor 類程式是長期穩定核心。
+
+### 11.2 `DiagramSelectionModel` 與 `CanvasInteractionState`：分離 Domain State 與 UI State
+
+選取、hover、rubber band、temporary link preview 都是 UI 暫態，不是 UML 物件本身的語意。重構後：
+
+- `DiagramSelectionModel` 管理 selected objects。
+- `CanvasInteractionState` 管理 hover、框選矩形、暫時連線預覽。
+- `UMLObject.selected` / `hovered` 暫時保留作為相容 flag，避免一次搬太深。
+
+這樣未來若同一份 diagram 有多個 view，不同 view 可以有不同 selection/hover，不會污染核心 document。
+
+### 11.3 Strategy Pattern：隔離滑鼠互動模式
+
+`CanvasMouseStrategy` 讓 select、create object、create link 的滑鼠行為彼此獨立。新增一種互動模式時，只要新增 strategy 並註冊工具，不需要把一大串 if/switch 塞進 `CanvasPanel`。
+
+這次新增 `paintOverlay(Graphics2D, CanvasRenderContext)` hook，讓每個 strategy 自己負責它的 overlay：
+
+- `SelectStrategy` 畫 rubber band。
+- `CreateLinkStrategy` 畫 temporary link preview。
+
+因此原先預留但未使用的 `CanvasOverlay` interface 已移除。現在不需要另一套 overlay object model；等未來真的需要多個 overlay 物件、overlay lifecycle、或 overlay composition 時，再引入也不遲。
+
+### 11.4 Registry + Factory：把工具建立集中化
+
+`EditorToolRegistry` 集中管理工具定義。每個 `EditorToolDefinition` 包含：
+
+- `EditorMode`
+- 顯示 label
+- icon
+- strategy factory
+- object/link factory
+- 是否為 object creation tool
+
+這採用 Registry + Factory 的組合，解決原本新增工具要同時改 `ButtonPanel`、`CanvasPanel`、`CreateObjectStrategy`、`CreateLinkStrategy` 的問題。現在新增圖形或連線時，主要新增一筆工具定義與對應 factory。
+
+取捨是 registry 本身稍微集中，但它集中的是「工具組裝資訊」，不是業務流程，因此比散落在 UI/controller 裡更容易維護。
+
+### 11.5 `PortOwner` / `PortReference`：用能力介面取代具體類別依賴
+
+原本 link endpoint 被綁死在 `BasicObject + int portIndex`。這表示只有 `BasicObject` 子類才能被連線。
+
+現在：
+
+- `PortOwner` 表示「此物件提供 ports」。
+- `BasicObject` 實作 `PortOwner`。
+- `PortReference` 持有 `PortOwner owner + portIndex`。
+- `LinkObject` 依賴 `PortReference`。
+
+這讓未來的 package、note、interface、甚至某些 composite，只要實作 `PortOwner` 就能成為連線端點，而不必硬塞進 `BasicObject` 繼承樹。
+
+### 11.6 Command Pattern：把 Undo/Redo 從 View 中解耦
+
+Command 仍維持 `undo()` / `redo()`，但目標改為 `DiagramDocument` 和必要的 `DiagramSelectionModel`。這讓 Command 不再需要 `CanvasPanel.rawAddObject()`，也不負責 repaint。
+
+好處是：
+
+- Command 可純單元測試。
+- View 更新由 `CanvasPanel.execute/undo/redo` 統一處理。
+- group/ungroup 可以記錄 z-order snapshot 並穩定還原。
+
+### 11.7 Composite Pattern：維持群組語意
+
+`CompositeObject` 仍是 Composite Pattern 的 composite 角色。它與 `BasicObject` 一樣繼承 `UMLObject`，所以 draw、move、contains、getBounds 可以被 `CanvasPanel` / `DiagramRenderer` 一視同仁處理。
+
+這個 pattern 適合 group/ungroup 需求，因為群組本質上是「物件包含物件」的樹狀結構。取捨是 composite 的 selection/port/linkability 需要額外政策；目前 composite 不實作 `PortOwner`，所以仍不能直接作為連線端點。
+
+### 11.8 Template Method：保留圖形與連線繪製骨架
+
+`BasicObject.draw()` 定義形狀、port、label 的繪製流程；子類只實作 `drawShape()` 與 `computePorts()`。`LinkObject.draw()` 定義線段繪製流程，子類只實作 `drawArrowHead()`。
+
+這保留現有行為與簡潔性，也避免為了重構一次搬動所有 rendering code。renderer layer 目前先委派既有 `draw()`，未來若要完全去除 model 對 `Graphics2D` 的依賴，可以逐步把實際繪製搬到 `UMLObjectRenderer` / `LinkRenderer`。
+
+### 11.9 Renderer Layer：先建立邊界，不急著大搬繪圖細節
+
+`DiagramRenderer`、`UMLObjectRenderer`、`LinkRenderer`、`CanvasOverlayRenderer` 的目的，是讓 `CanvasPanel.paintComponent` 不再知道 diagram 的細節。短期它們仍呼叫 `object.draw()` 與 `link.draw()`，這是刻意取捨：
+
+- 降低一次性重構風險。
+- 保持視覺行為相容。
+- 先讓 render pipeline 的依賴方向正確。
+
+未來若要輸出圖片、切換繪圖後端、或將 model 變成純資料，可以再逐步把 `Graphics2D` 依賴搬出 model。
+
+### 11.10 明確不做的事
+
+- 不改三個 link subclass 成 ArrowHead strategy，因為目前 link subclass 數量少，直接保留更單純。
+- 不移除逐行註解與 `System.out.println`，因為這次需求是架構重構，不是風格清理。
+- 不把 selection/hover flag 從 `UMLObject` 立刻刪除，因為 renderer 仍委派舊 `draw()`；先透過 `DiagramSelectionModel` / `CanvasInteractionState` 統一同步，後續再逐步清掉相容欄位。

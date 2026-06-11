@@ -1,0 +1,116 @@
+graph TB
+    subgraph ENTRY["Entry Point"]
+        MAIN["Main<br>FlatLight 主題 + EDT 啟動"]
+    end
+
+    subgraph VIEW["View / Swing Adapter (com.uml.view)"]
+        MF["MainFrame<br>JFrame + menu bar"]
+        BP["ButtonPanel<br>工具按鈕面板"]
+        CP["CanvasPanel<br>事件路由 + repaint adapter"]
+        LD["LabelDialog<br>標籤 / 顏色編輯"]
+        CIS["CanvasInteractionState<br>hover / rubber band / temp link"]
+    end
+
+    subgraph RENDER["Renderer Layer (com.uml.view.renderer)"]
+        CRC["CanvasRenderContext<br>rendering context"]
+        DR["DiagramRenderer<br>整份 diagram 繪製"]
+        UOR["UMLObjectRenderer<br>object renderer"]
+        LR["LinkRenderer<br>link renderer"]
+        COR["CanvasOverlayRenderer<br>overlay renderer"]
+    end
+
+    subgraph TOOL["Tool System (com.uml.controller.tool)"]
+        ETR["EditorToolRegistry<br>集中註冊工具"]
+        ETD["EditorToolDefinition<br>工具定義"]
+        DOF["DiagramObjectFactory<br>建立 UMLObject"]
+        DLF["DiagramLinkFactory<br>建立 LinkObject"]
+    end
+
+    subgraph CTL["Controller (com.uml.controller)"]
+        MM["ModeManager<br>目前模式 + observer"]
+        EM["EditorMode<br>模式列舉"]
+        MCL["ModeChangeListener<br>模式變更觀察者"]
+        subgraph STR["Strategy (com.uml.controller.strategy)"]
+            CMS["CanvasMouseStrategy<br>滑鼠事件策略 + paintOverlay hook"]
+            SS["SelectStrategy<br>選取 / 移動 / 縮放 / 框選"]
+            COS["CreateObjectStrategy<br>透過 DiagramObjectFactory 建立圖形"]
+            CLS["CreateLinkStrategy<br>透過 DiagramLinkFactory 建立連線"]
+        end
+    end
+
+    subgraph CMD["Command (com.uml.command)"]
+        CI["Command<br>undo / redo"]
+        CH["CommandHistory<br>undo / redo stacks"]
+        COC["CreateObjectCommand"]
+        CLC["CreateLinkCommand"]
+        MOC["MoveObjectsCommand"]
+        ROC["ResizeObjectCommand"]
+        GC["GroupCommand<br>保留 z-order snapshot"]
+        UGC["UngroupCommand<br>保留 composite index"]
+        SLC["SetLabelCommand"]
+    end
+
+    subgraph MODEL["Model (com.uml.model)"]
+        DOC["DiagramDocument<br>objects / links / z-order"]
+        SEL["DiagramSelectionModel<br>selection state"]
+        UO["UMLObject<br>抽象 UML 物件"]
+        BO["BasicObject<br>基礎圖形"]
+        PO["PortOwner<br>可提供 ports 的能力"]
+        PR["PortReference<br>owner + portIndex"]
+        RO["RectObject"]
+        OO["OvalObject"]
+        CO["CompositeObject"]
+        subgraph LNK["Link Model (com.uml.model.link)"]
+            LO["LinkObject<br>PortReference endpoints"]
+            AL["AssociationLink"]
+            GL["GeneralizationLink"]
+            CML["CompositionLink"]
+        end
+    end
+
+    subgraph UTIL["Util (com.uml.util)"]
+        UC["UMLConstants"]
+        HTU["HitTestUtil"]
+    end
+
+    MAIN --> MF
+    MF --> BP
+    MF --> CP
+    MF --> LD
+    MF --> ETR
+    BP --> ETR
+    CP --> ETR
+    ETR --> ETD
+    ETD --> DOF
+    ETD --> DLF
+
+    MM --> MCL
+    BP -.implements.-> MCL
+    CP --> CMS
+    CMS --> CIS
+    CMS -.-> COS
+    CMS -.-> COC
+    CI --> MOC
+    CI --> GC
+    CI --> SLC
+    CH --> CI
+    COC --> DOC
+    COC --> SEL
+    MOC --> DOC
+    MOC --> SEL
+    ROC --> DOC
+    ROC --> SEL
+    GC --> DOC
+    GC --> SEL
+    UGC --> DOC
+    UGC --> SEL
+    SLC --> DOC
+    SLC --> SEL
+
+    DOC --> UO
+    DOC --> LO
+    SEL --> DOC
+    UO --> CO
+    BO --> OO
+    PO --> AL
+    LO --> CML

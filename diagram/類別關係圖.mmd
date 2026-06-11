@@ -1,0 +1,114 @@
+classDiagram
+    class DiagramDocument {
+        -List~UMLObject~ objects
+        -List~LinkObject~ links
+        +getObjects() List~UMLObject~
+        +getLinks() List~LinkObject~
+        +addObject(UMLObject)
+        +addObjectAt(int, UMLObject)
+        +removeObject(UMLObject) boolean
+        +indexOfObject(UMLObject) int
+        +bringToFront(UMLObject)
+        +findObjectAt(int, int) UMLObject
+        +findPortOwnerNearPort(int, int) PortOwner
+        +findPortReferenceNearPoint(Point) PortReference
+    }
+
+    class DiagramSelectionModel {
+        -DiagramDocument document
+        -Set~UMLObject~ selectedObjects
+        +selectOnly(UMLObject)
+        +selectAll(Collection)
+        +addToSelection(UMLObject)
+        +clearSelection()
+        +isSelected(UMLObject) boolean
+        +getSelectedObjects() List~UMLObject~
+    }
+
+    class CanvasInteractionState {
+        -UMLObject hoveredObject
+        -Rectangle rubberBand
+        -PortReference temporaryLinkSource
+        -Point temporaryLinkEnd
+        +setHoveredObject(UMLObject)
+        +setRubberBand(Rectangle)
+        +setTemporaryLink(PortReference, Point)
+        +clearTemporaryLink()
+    }
+
+    class UMLObject {
+        <<abstract>>
+        -boolean selected
+        -boolean hovered
+        -String labelName
+        -Color labelColor
+        +draw(Graphics2D)*
+        +contains(int, int) boolean*
+        +getBounds() Rectangle*
+        +move(int, int)*
+        +moveTo(int, int)*
+    }
+
+    class PortOwner {
+        <<interface>>
+        +getPort(int) Point
+        +getNearestPortIndex(Point) int
+        +getBounds() Rectangle
+    }
+
+    class BasicObject {
+        <<abstract>>
+        -int x
+        -int y
+        -int width
+        -int height
+        -List~Point~ portsCache
+        +getPorts() List~Point~
+        +getPort(int) Point
+        +getNearestPortIndex(Point) int
+        +getResizeConstraint(int) ResizeConstraint
+        +getResizeAnchor(int) Point
+        +setBounds(int, int, int, int)
+        #computePorts() List~Point~*
+        #drawShape(Graphics2D)*
+    }
+
+    class PortReference {
+        <<record>>
+        +PortOwner owner
+        +int portIndex
+        +getPoint() Point
+    }
+
+    class LinkObject {
+        <<abstract>>
+        -PortReference source
+        -PortReference target
+        +draw(Graphics2D)
+        +getSourceReference() PortReference
+        +getTargetReference() PortReference
+        #drawArrowHead(Graphics2D, Point, Point)*
+    }
+
+    class CompositeObject {
+        -List~UMLObject~ children
+        +getDirectChildren() List~UMLObject~
+        +draw(Graphics2D)
+        +move(int, int)
+        +moveTo(int, int)
+    }
+
+    DiagramDocument --> UMLObject
+    DiagramDocument --> LinkObject
+    DiagramSelectionModel --> DiagramDocument
+    CanvasInteractionState --> PortReference
+    UMLObject <|-- BasicObject
+    UMLObject <|-- CompositeObject
+    BasicObject <|-- RectObject
+    BasicObject <|-- OvalObject
+    PortOwner <|.. BasicObject
+    LinkObject --> PortReference
+    PortReference --> PortOwner
+    LinkObject <|-- AssociationLink
+    LinkObject <|-- GeneralizationLink
+    LinkObject <|-- CompositionLink
