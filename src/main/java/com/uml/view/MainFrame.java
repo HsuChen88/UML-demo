@@ -2,6 +2,7 @@ package com.uml.view;
 
 import com.uml.command.SetLabelCommand;
 import com.uml.controller.ModeManager;
+import com.uml.controller.tool.EditorToolRegistry;
 import com.uml.model.BasicObject;
 import com.uml.model.UMLObject;
 
@@ -17,14 +18,15 @@ import java.util.List;
 public class MainFrame extends JFrame { // 頂層視窗，負責組裝所有 UI 元件並擁有選單列
 
     private final ModeManager modeManager = new ModeManager(); // 建立模式管理器（由 ButtonPanel 與 CanvasPanel 共用）
+    private final EditorToolRegistry toolRegistry = EditorToolRegistry.createDefault(); // 建立工具註冊表（由 ButtonPanel 與 CanvasPanel 共用）
     private final CanvasPanel canvasPanel; // 畫布面板
     private final ButtonPanel buttonPanel; // 左側工具按鈕面板
 
     public MainFrame() { // 建構子：組裝視窗
         super("Oops UML Editor"); // 設定視窗標題
 
-        canvasPanel = new CanvasPanel(modeManager); // 建立畫布，注入模式管理器
-        buttonPanel = new ButtonPanel(modeManager, canvasPanel); // 建立按鈕面板，注入模式管理器與畫布
+        canvasPanel = new CanvasPanel(modeManager, toolRegistry); // 建立畫布，注入模式管理器與工具註冊表
+        buttonPanel = new ButtonPanel(modeManager, canvasPanel, toolRegistry); // 建立按鈕面板，注入模式管理器、畫布與工具註冊表
 
         setLayout(new BorderLayout()); // 使用 BorderLayout 進行版面配置
         add(buttonPanel,              BorderLayout.WEST); // 工具按鈕面板放在左側
@@ -117,7 +119,7 @@ public class MainFrame extends JFrame { // 頂層視窗，負責組裝所有 UI 
 
             // Record for undo (use the same normalised name stored in model)
             canvasPanel.pushHistory(new SetLabelCommand( // 推入標籤命令到歷史（供 Undo 使用）
-                    canvasPanel, bo, beforeName, beforeColor, // 傳入前後狀態
+                    canvasPanel.getDocument(), bo, beforeName, beforeColor, // 傳入前後狀態
                     bo.getLabelName(), afterColor)); // 使用 model 中已正規化的名稱（null 而非空字串）
         }
     }

@@ -6,7 +6,7 @@ import com.uml.util.UMLConstants;
 import java.awt.*;
 import java.util.List;
 
-public abstract class BasicObject extends UMLObject { // 具有位置、尺寸與 port 的基本 UML 物件（RectObject 與 OvalObject 的共同父類別）
+public abstract class BasicObject extends UMLObject implements PortOwner { // 具有位置、尺寸與 port 的基本 UML 物件（RectObject 與 OvalObject 的共同父類別）
 
     // 縮放軸鎖定規則：NONE 兩軸均可、LOCK_WIDTH 鎖定寬度、LOCK_HEIGHT 鎖定高度
     public enum ResizeConstraint { NONE, LOCK_WIDTH, LOCK_HEIGHT }

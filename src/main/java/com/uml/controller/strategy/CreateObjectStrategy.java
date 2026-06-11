@@ -1,10 +1,8 @@
 package com.uml.controller.strategy;
 
 import com.uml.command.CreateObjectCommand;
-import com.uml.controller.EditorMode;
+import com.uml.controller.tool.DiagramObjectFactory;
 import com.uml.controller.ModeManager;
-import com.uml.model.OvalObject;
-import com.uml.model.RectObject;
 import com.uml.model.UMLObject;
 import com.uml.util.UMLConstants;
 import com.uml.view.CanvasPanel;
@@ -17,11 +15,11 @@ import java.awt.event.MouseEvent;
  */
 public class CreateObjectStrategy implements CanvasMouseStrategy { // 建立物件的策略，對應 Use Case A
 
-    private final EditorMode  objectMode; // 記錄此策略對應的模式（RECT 或 OVAL）
+    private final DiagramObjectFactory objectFactory; // 建立 UMLObject 的 factory
     private final ModeManager modeManager; // 用於建立物件後還原前一個模式
 
-    public CreateObjectStrategy(EditorMode objectMode, ModeManager modeManager) { // 建構子，注入模式與管理器
-        this.objectMode  = objectMode; // 儲存物件模式
+    public CreateObjectStrategy(DiagramObjectFactory objectFactory, ModeManager modeManager) { // 建構子，注入物件 factory 與管理器
+        this.objectFactory = objectFactory; // 儲存物件 factory
         this.modeManager = modeManager; // 儲存模式管理器
     }
 
@@ -30,11 +28,9 @@ public class CreateObjectStrategy implements CanvasMouseStrategy { // 建立物�
         int cx = e.getX() - UMLConstants.DEFAULT_W / 2; // 計算物件左上角 x，使物件以滑鼠為中心
         int cy = e.getY() - UMLConstants.DEFAULT_H / 2; // 計算物件左上角 y，使物件以滑鼠為中心
 
-        UMLObject obj = (objectMode == EditorMode.RECT) // 根據目前模式決定建立矩形還是橢圓
-                ? new RectObject(cx, cy, UMLConstants.DEFAULT_W, UMLConstants.DEFAULT_H) // 建立矩形物件
-                : new OvalObject(cx, cy, UMLConstants.DEFAULT_W, UMLConstants.DEFAULT_H); // 建立橢圓物件
+        UMLObject obj = objectFactory.create(cx, cy, UMLConstants.DEFAULT_W, UMLConstants.DEFAULT_H); // 由 factory 建立指定類型的物件
 
-        canvas.execute(new CreateObjectCommand(canvas, obj)); // 執行建立命令並推入命令歷史（支援 Undo）
+        canvas.execute(new CreateObjectCommand(canvas.getDocument(), canvas.getSelectionModel(), obj)); // 執行建立命令並推入命令歷史（支援 Undo）
         modeManager.restorePreviousMode(); // 建立完成後自動切回前一個模式（通常是 SELECT）
     }
 }

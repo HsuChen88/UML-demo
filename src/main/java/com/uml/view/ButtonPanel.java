@@ -3,6 +3,8 @@ package com.uml.view;
 import com.uml.controller.EditorMode;
 import com.uml.controller.ModeChangeListener;
 import com.uml.controller.ModeManager;
+import com.uml.controller.tool.EditorToolDefinition;
+import com.uml.controller.tool.EditorToolRegistry;
 import com.uml.util.UMLConstants;
 import net.miginfocom.swing.MigLayout;
 
@@ -30,24 +32,19 @@ public class ButtonPanel extends JPanel implements ModeChangeListener { // 左�
     private final CanvasPanel canvas; // 拖曳至畫布放開時的目標（Use Case A）
 
     public ButtonPanel(ModeManager modeManager, CanvasPanel c) { // 建構子：建立所有工具按鈕並配置版面
+        this(modeManager, c, EditorToolRegistry.createDefault());
+    }
+
+    public ButtonPanel(ModeManager modeManager, CanvasPanel c, EditorToolRegistry toolRegistry) { // 建構子：以工具註冊表建立所有工具按鈕並配置版面
         this.canvas = c;
         setLayout(new MigLayout("wrap 2, insets 12 8 12 8, gap 6 10", // 使用 MigLayout：每行 2 欄，設定邊距和間距
                 "[grow, right][44!]", // 第一欄：向右對齊並自動擴展；第二欄：固定 44px 寬
                 "")); // 列高度自動
 
-        Object[][] defs = { // 工具按鈕定義陣列（標籤文字、對應模式、圖示物件）
-            {"select",         EditorMode.SELECT,         new SelectIcon()        }, // 選取工具
-            {"association",    EditorMode.ASSOCIATION,    new AssociationIcon()   }, // 關聯線工具
-            {"generalization", EditorMode.GENERALIZATION, new GeneralizationIcon()}, // 繼承線工具
-            {"composition",    EditorMode.COMPOSITION,    new CompositionIcon()   }, // 組合線工具
-            {"rect",           EditorMode.RECT,           new RectIcon()          }, // 矩形工具
-            {"oval",           EditorMode.OVAL,           new OvalIcon()          }, // 橢圓工具
-        };
-
-        for (Object[] def : defs) { // 遍歷所有工具定義，建立對應的文字標籤與圖示標籤
-            String     labelText = (String)     def[0]; // 取得文字標籤內容
-            EditorMode mode      = (EditorMode) def[1]; // 取得對應模式
-            Icon       icon      = (Icon)       def[2]; // 取得圖示物件
+        for (EditorToolDefinition def : toolRegistry.getDefinitions()) { // 遍歷所有工具定義，建立對應的文字標籤與圖示標籤
+            String     labelText = def.label(); // 取得文字標籤內容
+            EditorMode mode      = def.mode(); // 取得對應模式
+            Icon       icon      = def.icon(); // 取得圖示物件
 
             JLabel lbl = new JLabel(labelText); // 建立工具名稱文字標籤
             lbl.setFont(lbl.getFont().deriveFont(UMLConstants.LABEL_FONT_SIZE)); // 設定字型大小
@@ -68,7 +65,7 @@ public class ButtonPanel extends JPanel implements ModeChangeListener { // 左�
 
                 @Override
                 public void mouseReleased(MouseEvent e) { // 放開時處理「從按鈕拖曳至畫布建立物件」（Use Case A）
-                    if (!mode.isObjectCreation()) return; // 只有 RECT/OVAL 模式需要此邏輯
+                    if (!def.objectCreation()) return; // 只有建立物件工具需要此邏輯
 
                     // Swing mouse-grab：mousePressed 在 btn 上，mouseReleased 也送到 btn（即使滑鼠已移到畫布上）
                     // 將放開座標從 btn 的座標系轉換為 canvas 的座標系

@@ -1,7 +1,9 @@
 package com.uml.controller.strategy;
 
 import com.uml.view.CanvasPanel;
+import com.uml.view.renderer.CanvasRenderContext;
 
+import java.awt.*;
 import java.awt.event.MouseEvent;
 
 /**
@@ -14,4 +16,5 @@ public interface CanvasMouseStrategy { // Strategy Pattern 的策略介面，定
     default void onReleased(MouseEvent e, CanvasPanel canvas) {} // 滑鼠放開事件
     default void onMoved   (MouseEvent e, CanvasPanel canvas) {} // 滑鼠移動事件（未按下）
     default void onClicked (MouseEvent e, CanvasPanel canvas) {} // 滑鼠點擊事件（pressed + released 在同位置）
+    default void paintOverlay(Graphics2D g, CanvasRenderContext context) {} // 繪製目前策略的 overlay（預設無）
 }
