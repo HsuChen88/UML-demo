@@ -19,9 +19,9 @@ public class CreateLinkStrategy implements CanvasMouseStrategy { // 建立連線
     private final DiagramLinkFactory linkFactory; // 建立 LinkObject 的 factory
 
     private PortReference sourcePortReference = null; // 連線的起點 port reference（按下滑鼠時決定）
-    private Point tempEnd = null; // 拖曳時滑鼠目前位置，用於繪製預覽虛線
+    private Point tempEnd = null;                     // 拖曳時滑鼠目前位置，用於繪製預覽虛線
 
-    public CreateLinkStrategy(DiagramLinkFactory linkFactory) { // 建構子，注入連線 factory
+    public CreateLinkStrategy(DiagramLinkFactory linkFactory) {
         this.linkFactory = linkFactory; // 儲存連線 factory
     }
 

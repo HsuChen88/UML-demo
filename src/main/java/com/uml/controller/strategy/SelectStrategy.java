@@ -40,7 +40,7 @@ public class SelectStrategy implements CanvasMouseStrategy { // 選取 strategy 
     private int       resizePort = -1;              // 正在拖曳的 port 索引（-1 表示無）
     private int       rubberX1, rubberY1;           // 框選矩形的起始角座標
 
-    private Point fixedAnchor = null; // 縮放時固定不動的錨點（被拖曳 port 的對角 / 對邊中點）
+    private Point fixedAnchor = null;               // 縮放時固定不動的錨點（被拖曳 port 的對角 / 對邊中點）
 
     // ── Undo/Redo snapshots ───────────────────────────────
     private Map<UMLObject, Point> moveBefore = null;    // 移動前各物件的位置快照（按下時記錄）
@@ -57,12 +57,12 @@ public class SelectStrategy implements CanvasMouseStrategy { // 選取 strategy 
             if (selectionModel.isSelected(obj) && obj instanceof BasicObject bo) { // 只對已選取的 BasicObject 做 port 測試
                 int pi = bo.getNearestPortIndex(pressPoint); // 找出最近的 port 索引
                 if (pi != -1) { // 若按下位置靠近某個 port
-                    subState    = SubState.RESIZING; // 進入縮放子狀態
+                    subState    = SubState.RESIZING;      // 進入縮放子狀態
                     dragTarget  = bo; // 記錄縮放目標
                     resizePort  = pi; // 記錄被拖曳的 port 索引
                     fixedAnchor = bo.getResizeAnchor(pi); // 取得固定錨點（對角位置）
                     // Snapshot before-bounds for undo
-                    resizeBX = bo.getX(); resizeBY = bo.getY(); // 記錄縮放前的 x、y
+                    resizeBX = bo.getX(); resizeBY = bo.getY();          // 記錄縮放前的 x、y
                     resizeBW = bo.getWidth(); resizeBH = bo.getHeight(); // 記錄縮放前的寬、高
                     return; // 找到 port 則直接返回，不繼續其他測試
                 }
@@ -72,7 +72,7 @@ public class SelectStrategy implements CanvasMouseStrategy { // 選取 strategy 
         // 2. Object hit-test → move
         UMLObject hit = context.getDocument().findObjectAt(e.getX(), e.getY()); // 找出被點擊的物件
         if (hit != null) { // 若點擊到物件
-            if (!selectionModel.isSelected(hit)) { // 若該物件尚未被選取
+            if (!selectionModel.isSelected(hit)) {  // 若該物件尚未被選取
                 selectionModel.selectOnly(hit);             // 選取被點擊的物件
                 context.getDocument().bringToFront(hit);    // 將物件移到最上層
             }
@@ -126,12 +126,12 @@ public class SelectStrategy implements CanvasMouseStrategy { // 選取 strategy 
 
     // ── mouseReleased ─────────────────────────────────────
     @Override
-    public void onReleased(MouseEvent e, CanvasEditorContext context) { // 滑鼠放開：完成操作並推入命令歷史
+    public void onReleased(MouseEvent e, CanvasEditorContext context) {
         if (subState == SubState.DRAGGING_OBJECT && moveBefore != null) { // 若是拖曳完成
             // Build after-snapshot and push only if something actually moved
             Map<UMLObject, Point> moveAfter = new LinkedHashMap<>(); // 建立移動後快照 Map
             moveBefore.keySet().forEach(obj -> { // 對每個已移動物件記錄新位置
-                Rectangle b = obj.getBounds(); // 取得目前邊界
+                Rectangle b = obj.getBounds();           // 取得目前邊界
                 moveAfter.put(obj, new Point(b.x, b.y)); // 記錄放開時的位置
             });
             boolean moved = moveBefore.entrySet().stream() // 比較前後位置，判斷是否真的移動過
@@ -143,7 +143,7 @@ public class SelectStrategy implements CanvasMouseStrategy { // 選取 strategy 
         }
 
         if (subState == SubState.RESIZING && dragTarget instanceof BasicObject bo) { // 若是縮放完成
-            int ax = bo.getX(), ay = bo.getY(), aw = bo.getWidth(), ah = bo.getHeight(); // 取得縮放後的邊界
+            int ax = bo.getX(), ay = bo.getY(), aw = bo.getWidth(), ah = bo.getHeight();
             if (ax != resizeBX || ay != resizeBY || aw != resizeBW || ah != resizeBH) { // 只有真正縮放才推入歷史
                 context.pushHistory(new ResizeObjectCommand(context.getDocument(), context.getSelectionModel(), bo, // 推入縮放命令（含前後邊界快照）
                         resizeBX, resizeBY, resizeBW, resizeBH, // 縮放前的邊界
@@ -163,9 +163,9 @@ public class SelectStrategy implements CanvasMouseStrategy { // 選取 strategy 
         }
 
         subState    = SubState.IDLE; // 重置子狀態為 IDLE
-        dragTarget  = null; // 清除拖曳目標
-        resizePort  = -1; // 清除 port 索引
-        fixedAnchor = null; // 清除錨點
+        dragTarget  = null;          // 清除拖曳目標
+        resizePort  = -1;            // 清除 port 索引
+        fixedAnchor = null;          // 清除錨點
     }
 
     // ── mouseClicked (single-click select) ───────────────
@@ -174,8 +174,8 @@ public class SelectStrategy implements CanvasMouseStrategy { // 選取 strategy 
         UMLObject hit = context.getDocument().findObjectAt(e.getX(), e.getY()); // 找出被點擊的物件
         if (hit == null) return; // 若點擊空白處則忽略
         context.getSelectionModel().selectOnly(hit); // 選取被點擊的物件
-        context.getDocument().bringToFront(hit); // 將物件移到最上層
-        context.repaintCanvas(); // 重繪
+        context.getDocument().bringToFront(hit);     // 將物件移到最上層
+        context.repaintCanvas();                     // 重繪
     }
 
     // ── Resize helper ─────────────────────────────────────
@@ -191,9 +191,9 @@ public class SelectStrategy implements CanvasMouseStrategy { // 選取 strategy 
         int newH = Math.abs(my - fixedAnchor.y); // 新的高度（錨點與滑鼠的 y 距離）
 
         switch (bo.getResizeConstraint(resizePort)) { // 依物件的軸鎖定規則調整
-            case LOCK_WIDTH  -> { newX = bo.getX(); newW = bo.getWidth(); } // 鎖定寬度（只有高度改變）
+            case LOCK_WIDTH  -> { newX = bo.getX(); newW = bo.getWidth(); }  // 鎖定寬度（只有高度改變）
             case LOCK_HEIGHT -> { newY = bo.getY(); newH = bo.getHeight(); } // 鎖定高度（只有寬度改變）
-            case NONE        -> { /* both axes resize freely */ } // 兩軸均可自由縮放
+            case NONE        -> { /* both axes resize freely */ }            // 兩軸均可自由縮放
         }
 
         bo.setBounds(newX, newY, newW, newH); // 套用新的邊界到物件

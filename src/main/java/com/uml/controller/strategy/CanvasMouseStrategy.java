@@ -14,12 +14,12 @@ public interface CanvasMouseStrategy { // Strategy Pattern 的 strategy 介面�
     default void onPressed (MouseEvent e, CanvasEditorContext context) {} // 滑鼠按下事件
     default void onDragged (MouseEvent e, CanvasEditorContext context) {} // 滑鼠拖曳事件（按住移動）
     default void onReleased(MouseEvent e, CanvasEditorContext context) {} // 滑鼠放開事件
-    default void onMoved   (MouseEvent e, CanvasEditorContext context) { // 滑鼠移動事件（未按下）
+    default void onMoved   (MouseEvent e, CanvasEditorContext context) {  // 滑鼠移動事件（未按下）
         UMLObject hovered = context.getDocument().findObjectAt(e.getX(), e.getY()); // 找出目前 hover 物件
-        if (hovered == context.getInteractionState().getHoveredObject()) return; // 若未改變則不重繪
+        if (hovered == context.getInteractionState().getHoveredObject()) return;    // 若未改變則不重繪
         context.getInteractionState().setHoveredObject(hovered); // 更新 hover 狀態
         context.repaintCanvas(); // 重繪
     }
-    default void onClicked (MouseEvent e, CanvasEditorContext context) {} // 滑鼠點擊事件（pressed + released 在同位置）
+    default void onClicked (MouseEvent e, CanvasEditorContext context) {}   // 滑鼠點擊事件（pressed + released 在同位置）
     default void paintOverlay(Graphics2D g, CanvasRenderContext context) {} // 繪製目前 strategy 的 overlay（預設無）
 }

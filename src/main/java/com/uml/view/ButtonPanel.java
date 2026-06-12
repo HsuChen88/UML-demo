@@ -43,14 +43,14 @@ public class ButtonPanel extends JPanel implements ModeChangeListener { // 左�
 
         for (EditorToolDefinition def : toolRegistry.getDefinitions()) { // 遍歷所有工具定義，建立對應的文字標籤與圖示標籤
             String     labelText = def.label(); // 取得文字標籤內容
-            EditorMode mode      = def.mode(); // 取得對應模式
-            Icon       icon      = def.icon(); // 取得圖示物件
+            EditorMode mode      = def.mode();  // 取得對應模式
+            Icon       icon      = def.icon();  // 取得圖示物件
 
             JLabel lbl = new JLabel(labelText); // 建立工具名稱文字標籤
             lbl.setFont(lbl.getFont().deriveFont(UMLConstants.LABEL_FONT_SIZE)); // 設定字型大小
 
             JLabel btn = new JLabel(icon); // 建立圖示標籤（用 JLabel 取代 JButton，避免 L&F 按壓視覺干擾）
-            btn.setOpaque(true); // 設為不透明，使 setBackground 生效
+            btn.setOpaque(true);     // 設為不透明，使 setBackground 生效
             btn.setBackground(null); // 預設無背景色（未選取狀態）
             btn.setBorder(BorderFactory.createLineBorder(new Color(160, 160, 160), 1)); // 預設細灰邊框
             btn.setHorizontalAlignment(SwingConstants.CENTER); // 圖示水平置中
@@ -77,11 +77,11 @@ public class ButtonPanel extends JPanel implements ModeChangeListener { // 左�
             });
 
             buttons.put(mode, btn); // 將圖示標籤加入對應表，供之後 highlightButton 使用
-            add(lbl, ""); // 將文字標籤加入版面（第一欄，向右對齊）
+            add(lbl, "");           // 將文字標籤加入版面（第一欄，向右對齊）
             add(btn, "w " + UMLConstants.BUTTON_SIZE + "!, h " + UMLConstants.BUTTON_SIZE + "!"); // 固定寬高
         }
 
-        modeManager.addListener(this); // 將自己註冊為模式切換監聽者（Observer Pattern）
+        modeManager.addListener(this);      // 將自己註冊為模式切換監聽者（Observer Pattern）
         highlightButton(EditorMode.SELECT); // 初始化時高亮 SELECT 按鈕
     }
 

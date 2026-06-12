@@ -20,9 +20,9 @@ public abstract class LinkObject { // 所有連線物件的抽象基底類別
         Point p1 = source.getPoint(); // 取得起點 port 的目前座標（物件移動後自動更新）
         Point p2 = target.getPoint(); // 取得終點 port 的目前座標
 
-        g.setColor(Color.BLACK); // 設定連線顏色為黑色
+        g.setColor(Color.BLACK);                                  // 設定連線顏色為黑色
         g.setStroke(new BasicStroke(UMLConstants.STROKE_NORMAL)); // 設定連線線寬
-        g.drawLine(p1.x, p1.y, p2.x, p2.y); // 繪製從起點到終點的直線
+        g.drawLine(p1.x, p1.y, p2.x, p2.y);                       // 繪製從起點到終點的直線
 
         drawArrowHead(g, p1, p2); // 呼叫子類別方法繪製對應的箭頭（Template Method hook）
     }

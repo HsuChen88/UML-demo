@@ -17,8 +17,8 @@ public class CompositeObject extends UMLObject { // 複合物件（群組容器�
     @Override
     public Rectangle getBounds() { // 計算包含「所有」子物件的最小包圍矩形
         if (children.isEmpty()) return new Rectangle(); // 若無子物件則回傳空矩形
-        Rectangle r = children.get(0).getBounds(); // 從第一個子物件的邊界開始
-        for (int i = 1; i < children.size(); i++) { // 遍歷其餘子物件
+        Rectangle r = children.get(0).getBounds();    // 從第一個子物件的邊界開始
+        for (int i = 1; i < children.size(); i++) {   // 遍歷其餘子物件
             r = r.union(children.get(i).getBounds()); // 將目前矩形與子物件邊界取聯集（擴展包圍矩形）
         }
         return r; // 回傳最終的包圍矩形

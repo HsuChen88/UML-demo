@@ -35,14 +35,14 @@ public class CanvasPanel extends JPanel implements CanvasEditorContext { // 繼�
     // ── Model / state ─────────────────────────────────────
     private final DiagramDocument document = new DiagramDocument(); // diagram 結構資料（objects、links、z-order）
     private final DiagramSelectionModel selectionModel = new DiagramSelectionModel(document); // diagram 選取狀態
-    private final CanvasInteractionState interactionState = new CanvasInteractionState(); // 畫布互動暫態
+    private final CanvasInteractionState interactionState = new CanvasInteractionState();     // 畫布互動暫態
 
     private CanvasMouseStrategy currentStrategy;                    // 目前使用中的滑鼠 strategy 
     private final Map<EditorMode, CanvasMouseStrategy> strategyMap; // 模式 →  strategy 的對應表
 
     // ── Rendering ─────────────────────────────────────────
-    private final DiagramRenderer diagramRenderer = new DiagramRenderer(); // diagram renderer
-    private final CanvasOverlayRenderer overlayRenderer = new CanvasOverlayRenderer(); // overlay renderer
+    private final DiagramRenderer diagramRenderer = new DiagramRenderer();
+    private final CanvasOverlayRenderer overlayRenderer = new CanvasOverlayRenderer();
 
     // ── Command history ───────────────────────────────────
     private final CommandHistory history = new CommandHistory(); // 命令歷史，支援 Undo/Redo
@@ -56,7 +56,7 @@ public class CanvasPanel extends JPanel implements CanvasEditorContext { // 繼�
         setPreferredSize(new Dimension(UMLConstants.CANVAS_W, UMLConstants.CANVAS_H)); // 設定畫布大小
 
         strategyMap = toolRegistry.createStrategyMap(modeManager); // 由工具註冊表建立模式→ strategy 的對應表
-        currentStrategy = strategyMap.get(EditorMode.SELECT); // 預設為選取模式
+        currentStrategy = strategyMap.get(EditorMode.SELECT);      // 預設為選取模式
 
         modeManager.addListener((newMode, prev) -> // 傳入臨時匿名物件，監聽模式切換事件
                 currentStrategy = strategyMap.get(newMode)); // 切換時更新目前 strategy 
@@ -114,7 +114,7 @@ public class CanvasPanel extends JPanel implements CanvasEditorContext { // 繼�
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON); // 開啟反鋸齒，讓線條更平滑
 
         CanvasRenderContext renderContext = new CanvasRenderContext(document, selectionModel, interactionState); // 建立 renderer 需要的上下文
-        diagramRenderer.render(g2d, renderContext); // 繪製 diagram 內容
+        diagramRenderer.render(g2d, renderContext);                  // 繪製 diagram 內容
         overlayRenderer.render(g2d, renderContext, currentStrategy); // 繪製目前 strategy 的 overlay
 
         g2d.dispose(); // 釋放 Graphics2D 副本資源

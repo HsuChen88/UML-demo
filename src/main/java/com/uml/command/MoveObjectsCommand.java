@@ -20,12 +20,12 @@ import java.util.Map;
  */
 public class MoveObjectsCommand implements Command { // 移動物件的命令（Use Case E 的 Undo/Redo 支援）
 
-    private final DiagramDocument document; // 目標 diagram document
+    private final DiagramDocument document;             // 目標 diagram document
     private final DiagramSelectionModel selectionModel; // diagram 選取狀態
     /** object → top-left position BEFORE the move */
-    private final Map<UMLObject, Point> before; // 移動前各物件的位置快照（物件 → 左上角座標）
+    private final Map<UMLObject, Point> before;         // 移動前各物件的位置快照（物件 → 左上角座標）
     /** object → top-left position AFTER the move */
-    private final Map<UMLObject, Point> after; // 移動後各物件的位置快照
+    private final Map<UMLObject, Point> after;          // 移動後各物件的位置快照
 
     public MoveObjectsCommand(DiagramDocument document, // 建構子：接收 document、selection 與前後位置快照
                               DiagramSelectionModel selectionModel,
@@ -34,7 +34,7 @@ public class MoveObjectsCommand implements Command { // 移動物件的命令（
         this.document = document;
         this.selectionModel = selectionModel;
         this.before = new LinkedHashMap<>(before); // 深複製前快照（防止外部修改影響命令）
-        this.after  = new LinkedHashMap<>(after); // 深複製後快照
+        this.after  = new LinkedHashMap<>(after);  // 深複製後快照
     }
 
     @Override

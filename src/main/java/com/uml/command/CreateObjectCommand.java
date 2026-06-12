@@ -11,9 +11,9 @@ import com.uml.model.object.UMLObject;
  */
 public class CreateObjectCommand implements Command { // 建立物件的命令（Use Case A 的 Undo/Redo 支援）
 
-    private final DiagramDocument document; // 目標 diagram document
+    private final DiagramDocument document;             // 目標 diagram document
     private final DiagramSelectionModel selectionModel; // diagram 選取狀態
-    private final UMLObject created; // 被建立的物件（undo 時移除，redo 時重新加入）
+    private final UMLObject created;                    // 被建立的物件（undo 時移除，redo 時重新加入）
 
     public CreateObjectCommand(DiagramDocument document, DiagramSelectionModel selectionModel, UMLObject created) { // 建構子：接收 document、selection 與被建立的物件
         this.document = document;
@@ -22,14 +22,14 @@ public class CreateObjectCommand implements Command { // 建立物件的命令�
     }
 
     @Override
-    public void undo() { // 還原：從畫布移除物件
-        document.removeObject(created); // 從 document 移除物件
+    public void undo() {
+        document.removeObject(created);  // 從 document 移除物件
         selectionModel.clearSelection(); // 清除選取狀態
     }
 
     @Override
-    public void redo() { // 重做（同時作為初次執行）：將物件加回畫布
-        document.addObject(created); // 將物件加入 document
+    public void redo() { 
+        document.addObject(created);        // 將物件加入 document
         selectionModel.selectOnly(created); // 選取新建立的物件
     }
 }

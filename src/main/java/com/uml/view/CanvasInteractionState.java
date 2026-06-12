@@ -7,10 +7,10 @@ import java.awt.*;
 
 public class CanvasInteractionState { // 管理畫布互動暫態，例如 hover、框選與暫時連線預覽
 
-    private UMLObject hoveredObject = null; // 滑鼠目前 hover 的物件
-    private Rectangle rubberBand = null; // 框選矩形
+    private UMLObject hoveredObject = null;           // 滑鼠目前 hover 的物件
+    private Rectangle rubberBand = null;              // 框選矩形
     private PortReference temporaryLinkSource = null; // 暫時連線起點 port
-    private Point temporaryLinkEnd = null; // 暫時連線終點座標
+    private Point temporaryLinkEnd = null;            // 暫時連線終點座標
 
     public UMLObject getHoveredObject() { return hoveredObject; } // 取得目前 hover 物件
 
@@ -22,7 +22,7 @@ public class CanvasInteractionState { // 管理畫布互動暫態，例如 hover
         setHoveredObject(null);
     }
 
-    public Rectangle getRubberBand() { return rubberBand; } // 取得框選矩形
+    public Rectangle getRubberBand() { return rubberBand; }    // 取得框選矩形
     public void setRubberBand(Rectangle r) { rubberBand = r; } // 設定框選矩形
 
     public PortReference getTemporaryLinkSource() { return temporaryLinkSource; } // 取得暫時連線起點

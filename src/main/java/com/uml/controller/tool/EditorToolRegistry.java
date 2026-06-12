@@ -21,7 +21,7 @@ import java.util.Map;
 
 public class EditorToolRegistry { // 集中註冊所有編輯器工具，供 UI 與 Canvas 建立 strategy 
 
-    private final List<EditorToolDefinition> definitions; // 依工具列顯示順序排列的工具定義
+    private final List<EditorToolDefinition> definitions;                  // 依工具列顯示順序排列的工具定義
     private final Map<EditorMode, EditorToolDefinition> definitionsByMode; // 模式 → 工具定義
 
     public EditorToolRegistry(List<EditorToolDefinition> definitions) { // 建構子：接收完整工具定義清單

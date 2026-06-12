@@ -26,7 +26,7 @@ public abstract class BasicObject extends UMLObject implements PortOwner { // �
     // ── UMLObject contract ────────────────────────────────
     @Override
     public void draw(Graphics2D g) { // Template Method：定義繪製流程，子類別實作各步驟
-        drawShape(g);                                   // 1. 繪製物件形狀（矩形或橢圓）
+        drawShape(g);                                      // 1. 繪製物件形狀（矩形或橢圓）
         String name = getLabelName();
         if (name != null && !name.isBlank()) drawLabel(g); // 2. 若有標籤文字則繪製標籤
     }
@@ -43,15 +43,15 @@ public abstract class BasicObject extends UMLObject implements PortOwner { // �
 
     @Override
     public void move(int dx, int dy) { // 以相對位移移動物件（拖曳時使用）
-        x += dx; // 更新 x 座標
-        y += dy; // 更新 y 座標
+        x += dx; 
+        y += dy; 
         portsCache = null; // 使 port 快取失效，下次存取時重新計算
     }
 
     @Override
     public void moveTo(int nx, int ny) { // 移動到絕對座標（Undo/Redo 時使用）
-        x = nx; // 直接設定 x 座標
-        y = ny; // 直接設定 y 座標
+        x = nx; 
+        y = ny; 
         portsCache = null; // 使 port 快取失效
     }
 
@@ -86,27 +86,27 @@ public abstract class BasicObject extends UMLObject implements PortOwner { // �
     protected abstract void drawShape(Graphics2D g); // 抽象方法：由子類別實作具體形狀的繪製
 
     public void drawPorts(Graphics2D g) { // 繪製所有 port 把手（小黑色方塊）
-        g.setColor(Color.BLACK); // 設定 port 顏色為黑色
-        int half = UMLConstants.PORT_SIZE / 2; // 計算 port 方塊的半邊長
-        for (Point p : getPorts()) { // 遍歷所有 port
+        g.setColor(Color.BLACK);                // 設定 port 顏色為黑色
+        int half = UMLConstants.PORT_SIZE / 2;  // 計算 port 方塊的半邊長
+        for (Point p : getPorts()) {
             g.fillRect(p.x - half, p.y - half, UMLConstants.PORT_SIZE, UMLConstants.PORT_SIZE); // 以 port 座標為中心繪製方塊
         }
     }
 
     protected void drawLabel(Graphics2D g) { // 繪製物件標籤文字（置中對齊）
-        String name = getLabelName(); // 取得標籤文字
-        g.setColor(Color.BLACK); // 設定文字顏色為黑色
-        FontMetrics fm = g.getFontMetrics(); // 取得字型度量，用於計算文字寬高
-        int tw = fm.stringWidth(name); // 計算文字寬度（像素）
+        String name = getLabelName();                    // 取得標籤文字
+        g.setColor(Color.BLACK);                         // 設定文字顏色為黑色
+        FontMetrics fm = g.getFontMetrics();             // 取得字型度量，用於計算文字寬高
+        int tw = fm.stringWidth(name);                   // 計算文字寬度（像素）
         int th = (fm.getAscent() - fm.getDescent()) / 2; // 計算文字高度修正值（垂直置中）
-        int cx = getX() + getWidth()  / 2 - tw / 2; // 計算文字繪製的 x 座標（水平置中）
-        int cy = getY() + getHeight() / 2 + th; // 計算文字繪製的 y 座標（垂直置中）
-        g.drawString(name, cx, cy); // 在物件中央繪製標籤文字
+        int cx = getX() + getWidth()  / 2 - tw / 2;      // 計算文字繪製的 x 座標（水平置中）
+        int cy = getY() + getHeight() / 2 + th;          // 計算文字繪製的 y 座標（垂直置中）
+        g.drawString(name, cx, cy);                      // 在物件中央繪製標籤文字
     }
 
     public void setBounds(int nx, int ny, int nw, int nh) { // 設定物件的新邊界（縮放時使用）
-        x      = nx; // 更新 x 座標
-        y      = ny; // 更新 y 座標
+        x      = nx; 
+        y      = ny; 
         width  = Math.max(nw, UMLConstants.MIN_SIZE); // 更新寬度，確保不低於最小值
         height = Math.max(nh, UMLConstants.MIN_SIZE); // 更新高度，確保不低於最小值
         portsCache = null; // 使 port 快取失效

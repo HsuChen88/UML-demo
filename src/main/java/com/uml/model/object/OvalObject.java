@@ -38,10 +38,10 @@ public class OvalObject extends BasicObject { // 橢圓 UML 物件，繼承自 B
     public boolean contains(int px, int py) { // 覆寫點擊測試：使用橢圓方程式（比矩形包圍框更精確）
         double cx = getX() + getWidth()  / 2.0; // 橢圓中心 x
         double cy = getY() + getHeight() / 2.0; // 橢圓中心 y
-        double rx = getWidth()  / 2.0; // 橢圓水平半徑
-        double ry = getHeight() / 2.0; // 橢圓垂直半徑
-        double dx = (px - cx) / rx; // 點相對於橢圓的標準化 x 距離
-        double dy = (py - cy) / ry; // 點相對於橢圓的標準化 y 距離
+        double rx = getWidth()  / 2.0;          // 橢圓水平半徑
+        double ry = getHeight() / 2.0;          // 橢圓垂直半徑
+        double dx = (px - cx) / rx;             // 點相對於橢圓的標準化 x 距離
+        double dy = (py - cy) / ry;             // 點相對於橢圓的標準化 y 距離
         return dx * dx + dy * dy <= 1.0; // 橢圓方程式：(dx²+dy² ≤ 1) 表示點在橢圓內
     }
 
@@ -74,7 +74,7 @@ public class OvalObject extends BasicObject { // 橢圓 UML 物件，繼承自 B
             case 1 -> new Point(x,         y + h / 2);  // R（右）→ 固定 L（左）
             case 2 -> new Point(x + w / 2, y        );  // B（下）→ 固定 T（上）
             case 3 -> new Point(x + w,     y + h / 2);  // L（左）→ 固定 R（右）
-            default -> new Point(x,        y        ); // 不應發生，預設回傳左上角
+            default -> new Point(x,        y        );  // 不應發生，預設回傳左上角
         };
     }
 }

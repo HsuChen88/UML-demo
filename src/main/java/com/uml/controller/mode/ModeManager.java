@@ -14,7 +14,7 @@ public class ModeManager { // 模式管理器：維護目前編輯模式，並�
 
     private final List<ModeChangeListener> listeners = new ArrayList<>(); // 所有已註冊的模式切換監聽者
 
-    public void setMode(EditorMode mode) { // 切換到指定模式
+    public void setMode(EditorMode mode) { 
         if (mode == currentMode) return; // 若模式未改變則直接返回，避免無意義的通知
         previousMode = currentMode; // 記下舊模式，供之後還原使用
         currentMode  = mode;        // 更新目前模式
@@ -25,7 +25,7 @@ public class ModeManager { // 模式管理器：維護目前編輯模式，並�
         setMode(previousMode); // 呼叫 setMode 確保監聽者也被通知
     }
 
-    public EditorMode getCurrentMode()  { return currentMode; }  // 取得目前模式
+    public EditorMode getCurrentMode()  { return currentMode; }
 
-    public void addListener(ModeChangeListener l) { listeners.add(l); } // 新增一個模式切換監聽者
+    public void addListener(ModeChangeListener l) { listeners.add(l); }
 }

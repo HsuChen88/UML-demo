@@ -10,10 +10,10 @@ import java.awt.*;
 public class UMLObjectRenderer { // 專責繪製 UMLObject 的 renderer
 
     public void render(Graphics2D g, UMLObject object, CanvasRenderContext context) { // 繪製單一 UMLObject
-        object.draw(g); // 第一階段先委派既有 draw()，降低重構風險
+        object.draw(g);
         if (isSelectedOrHovered(object, context)) { // 若物件被選取或 hover ，renderer 負責畫互動視覺
             if (object instanceof BasicObject basicObject) {
-                basicObject.drawPorts(g); // BasicObject 顯示 ports
+                basicObject.drawPorts(g);                // BasicObject 顯示 ports
             } else if (object instanceof CompositeObject compositeObject) {
                 drawCompositeBorder(g, compositeObject); // CompositeObject 顯示群組外框
             }

@@ -15,7 +15,7 @@ import java.awt.event.MouseEvent;
 public class CreateObjectStrategy implements CanvasMouseStrategy { // 建立物件的 strategy ，對應 Use Case A
 
     private final DiagramObjectFactory objectFactory; // 建立 UMLObject 的 factory
-    private final ModeManager modeManager; // 用於建立物件後還原前一個模式
+    private final ModeManager modeManager;  // 用於建立物件後還原前一個模式
 
     public CreateObjectStrategy(DiagramObjectFactory objectFactory, ModeManager modeManager) { // 建構子，注入物件 factory 與管理器
         this.objectFactory = objectFactory; // 儲存物件 factory

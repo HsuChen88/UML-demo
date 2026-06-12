@@ -13,7 +13,7 @@ public class DiagramSelectionModel { // 管理 diagram 的選取狀態，避免�
     private final DiagramDocument document; // selection 所屬的 diagram document
     private final Set<UMLObject> selectedObjects = new LinkedHashSet<>(); // 目前選取的物件集合
 
-    public DiagramSelectionModel(DiagramDocument document) { // 建構子：綁定一份 document
+    public DiagramSelectionModel(DiagramDocument document) { // 建構子：須綁定一份 document
         this.document = document;
     }
 
