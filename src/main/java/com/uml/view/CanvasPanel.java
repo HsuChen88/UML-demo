@@ -122,14 +122,14 @@ public class CanvasPanel extends JPanel implements CanvasEditorContext { // 繼�
 
     // ── Command API ───────────────────────────────────────
     public void execute(Command cmd) { // 執行並記錄命令（模型尚未更新時使用）
-        cmd.redo(); // 呼叫 redo() 將命令效果套用到模型
-        history.push(cmd); // 將命令推入歷史堆疊，供之後 undo 使用
-        repaint(); // 統一由 Swing adapter 觸發重繪
+        cmd.redo();         // 呼叫 redo() 將命令效果套用到模型
+        history.push(cmd);  // 將命令推入歷史堆疊，供之後 undo 使用
+        repaint();          // 統一由 Swing adapter 觸發重繪
     }
 
     public void pushHistory(Command cmd) { // 只記錄命令（模型已事先更新時使用）
-        history.push(cmd); // 直接推入歷史，不再執行 redo()
-        repaint(); // 統一由 Swing adapter 觸發重繪
+        history.push(cmd);  // 直接推入歷史，不再執行 redo()
+        repaint();          // 統一由 Swing adapter 觸發重繪
     }
 
     public void undo() { history.undo(); repaint(); } // 呼叫歷史的 undo，還原上一個命令

@@ -34,16 +34,16 @@ public class SelectStrategy implements CanvasMouseStrategy { // 選取 strategy 
 
     private enum SubState { IDLE, DRAGGING_OBJECT, RESIZING, RUBBER_BANDING } // 選取模式內部的子狀態機
 
-    private SubState  subState   = SubState.IDLE; // 目前的子狀態，初始為 IDLE
-    private Point     pressPoint = null; // 記錄滑鼠按下的位置，用於計算拖曳位移
-    private UMLObject dragTarget = null; // 正在被拖曳或縮放的目標物件
-    private int       resizePort = -1; // 正在拖曳的 port 索引（-1 表示無）
-    private int       rubberX1, rubberY1; // 框選矩形的起始角座標
+    private SubState  subState   = SubState.IDLE;   // 目前的子狀態，初始為 IDLE
+    private Point     pressPoint = null;            // 記錄滑鼠按下的位置，用於計算拖曳位移
+    private UMLObject dragTarget = null;            // 正在被拖曳或縮放的目標物件
+    private int       resizePort = -1;              // 正在拖曳的 port 索引（-1 表示無）
+    private int       rubberX1, rubberY1;           // 框選矩形的起始角座標
 
     private Point fixedAnchor = null; // 縮放時固定不動的錨點（被拖曳 port 的對角 / 對邊中點）
 
     // ── Undo/Redo snapshots ───────────────────────────────
-    private Map<UMLObject, Point> moveBefore = null; // 移動前各物件的位置快照（按下時記錄）
+    private Map<UMLObject, Point> moveBefore = null;    // 移動前各物件的位置快照（按下時記錄）
     private int resizeBX, resizeBY, resizeBW, resizeBH; // 縮放前目標物件的邊界快照（按下時記錄）
 
     // ── mousePressed ─────────────────────────────────────
@@ -73,16 +73,16 @@ public class SelectStrategy implements CanvasMouseStrategy { // 選取 strategy 
         UMLObject hit = context.getDocument().findObjectAt(e.getX(), e.getY()); // 找出被點擊的物件
         if (hit != null) { // 若點擊到物件
             if (!selectionModel.isSelected(hit)) { // 若該物件尚未被選取
-                selectionModel.selectOnly(hit); // 選取被點擊的物件
-                context.getDocument().bringToFront(hit); // 將物件移到最上層
+                selectionModel.selectOnly(hit);             // 選取被點擊的物件
+                context.getDocument().bringToFront(hit);    // 將物件移到最上層
             }
-            subState   = SubState.DRAGGING_OBJECT; // 進入拖曳子狀態
-            dragTarget = hit; // 記錄被拖曳的物件
+            subState   = SubState.DRAGGING_OBJECT;  // 進入拖曳子狀態
+            dragTarget = hit;                       // 記錄被拖曳的物件
             // Snapshot before-positions of ALL selected objects for undo
-            moveBefore = new LinkedHashMap<>(); // 建立移動前快照 Map
+            moveBefore = new LinkedHashMap<>();     // 建立移動前快照 Map
             for (UMLObject obj : selectionModel.getSelectedObjects()) { // 對所有已選取物件做快照
-                Rectangle b = obj.getBounds(); // 取得物件邊界
-                moveBefore.put(obj, new Point(b.x, b.y)); // 記錄按下時的位置
+                Rectangle b = obj.getBounds();              // 取得物件邊界
+                moveBefore.put(obj, new Point(b.x, b.y));   // 記錄按下時的位置
             }
             context.repaintCanvas(); // 重繪以顯示選取狀態
             return; // 找到物件則直接返回
