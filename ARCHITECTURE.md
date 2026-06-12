@@ -17,7 +17,7 @@
 | `com.uml.command` | Undo / Redo 的行為封裝 | `Command`, `CommandHistory`, `CreateObjectCommand`, `GroupCommand`, `SetLabelCommand` 等 | Command 只操作 `DiagramDocument` 與必要的 `DiagramSelectionModel`，不依賴 `CanvasPanel`、不自行 repaint。 |
 | `com.uml.controller.mode` | 編輯模式狀態與 Observer | `EditorMode`, `ModeManager`, `ModeChangeListener` | 模式切換由 `ModeManager` 廣播；`ButtonPanel` 更新高亮，`CanvasPanel` 切換 current strategy。 |
 | `com.uml.controller.strategy` | 滑鼠互動策略 | `CanvasMouseStrategy`, `CanvasEditorContext`, `SelectStrategy`, `CreateObjectStrategy`, `CreateLinkStrategy` | Strategy 只依賴 `CanvasEditorContext`，不要直接依賴 Swing `CanvasPanel`。需要畫暫態視覺時覆寫 `paintOverlay`。 |
-| `com.uml.controller.tool` | 工具註冊與 factory | `EditorToolRegistry`, `EditorToolDefinition`, `DiagramObjectFactory`, `DiagramLinkFactory` | 新增工具時優先新增 tool definition；避免把工具清單散落在 `ButtonPanel` 和 `CanvasPanel`。 |
+| `com.uml.controller.tool` | 工具註冊與建立函式 | `EditorToolRegistry`, `EditorToolDefinition`, `DiagramObjectFactory`, `DiagramLinkFactory` | 新增工具時優先新增 tool definition；避免把工具清單散落在 `ButtonPanel` 和 `CanvasPanel`。 |
 | `com.uml.view` | Swing 視窗與 adapter | `MainFrame`, `CanvasPanel`, `ButtonPanel`, `LabelDialog`, `CanvasInteractionState` | `CanvasPanel` 是 Swing adapter：轉發事件、建立 render context、執行 command、repaint。hover、rubber band、temp link 放在 `CanvasInteractionState`。 |
 | `com.uml.view.renderer` | 畫布繪製 pipeline | `DiagramRenderer`, `UMLObjectRenderer`, `LinkRenderer`, `CanvasOverlayRenderer`, `CanvasRenderContext` | selected / hovered 視覺由 renderer 根據 context 判斷；model 的 `draw()` 目前仍畫本體，未來可逐步移出 AWT 依賴。 |
 | `com.uml.view.toolicon` | 工具列圖示 | `ToolIcons` | 集中產生工具圖示，讓 `EditorToolRegistry` 可提供 icon，`ButtonPanel` 不必知道圖示細節。 |
@@ -532,10 +532,10 @@ mindmap
       若可被連線則實作 PortOwner
       定義 ports 與 resize 規則
       新增 EditorToolDefinition
-      提供 DiagramObjectFactory
+      提供物件建立函式
     新增「連線」類型
       保留 LinkObject 子類設計
-      提供 DiagramLinkFactory
+      提供連線建立函式
       新增 EditorToolDefinition
       視需要補充 ToolIcons
     新增「互動」模式
@@ -596,20 +596,19 @@ mindmap
 
 因此原先預留但未使用的 `CanvasOverlay` interface 已移除。現在不需要另一套 overlay object model；等未來真的需要多個 overlay 物件、overlay lifecycle、或 overlay composition 時，再引入也不遲。
 
-### 11.4 Registry + Factory：把工具建立集中化
+### 11.4 Registry + 建立函式注入：把工具建立集中化但不框架化
 
-`EditorToolRegistry` 集中管理工具定義。每個 `EditorToolDefinition` 包含：
+`EditorToolRegistry` 集中管理工具定義與少量建立函式。每個 `EditorToolDefinition` 只保留 UI 與 strategy 建立所需資料：
 
 - `EditorMode`
 - 顯示 label
 - icon
-- strategy factory
-- object/link factory
-- 是否為 object creation tool
+- strategy 建立函式
+- 是否支援從工具列拖放到畫布建立物件
 
-這採用 Registry + Factory 的組合，解決原本新增工具要同時改 `ButtonPanel`、`CanvasPanel`、`CreateObjectStrategy`、`CreateLinkStrategy` 的問題。現在新增圖形或連線時，主要新增一筆工具定義與對應 factory。
+`DiagramObjectFactory` 與 `DiagramLinkFactory` 只作為 strategy constructor injection 的小型 functional interface，讓 `CreateObjectStrategy` / `CreateLinkStrategy` 不需要 switch 或直接 new 具體類別。它們不再被重複存進 `EditorToolDefinition` 當 metadata，避免把工具系統做成過重的 framework。
 
-取捨是 registry 本身稍微集中，但它集中的是「工具組裝資訊」，不是業務流程，因此比散落在 UI/controller 裡更容易維護。
+取捨是 registry 仍然集中知道內建工具的具體 class；但它集中的是「工具組裝資訊」，不是業務流程。這個版本保留新增工具的擴充點，同時減少不必要的 factory 層與欄位。
 
 ### 11.5 `PortOwner` / `PortReference`：用能力介面取代具體類別依賴
 

@@ -41,17 +41,17 @@ public class EditorToolRegistry { // 集中註冊所有編輯器工具，供 UI 
 
         List<EditorToolDefinition> defs = new ArrayList<>();
         defs.add(new EditorToolDefinition(EditorMode.SELECT, "select", ToolIcons.select(),
-                modeManager -> new SelectStrategy(), false, null, null));
+                modeManager -> new SelectStrategy()));
         defs.add(new EditorToolDefinition(EditorMode.ASSOCIATION, "association", ToolIcons.association(),
-                modeManager -> new CreateLinkStrategy(associationFactory), false, null, associationFactory));
+                modeManager -> new CreateLinkStrategy(associationFactory)));
         defs.add(new EditorToolDefinition(EditorMode.GENERALIZATION, "generalization", ToolIcons.generalization(),
-                modeManager -> new CreateLinkStrategy(generalizationFactory), false, null, generalizationFactory));
+                modeManager -> new CreateLinkStrategy(generalizationFactory)));
         defs.add(new EditorToolDefinition(EditorMode.COMPOSITION, "composition", ToolIcons.composition(),
-                modeManager -> new CreateLinkStrategy(compositionFactory), false, null, compositionFactory));
+                modeManager -> new CreateLinkStrategy(compositionFactory)));
         defs.add(new EditorToolDefinition(EditorMode.RECT, "rect", ToolIcons.rect(),
-                modeManager -> new CreateObjectStrategy(rectFactory, modeManager), true, rectFactory, null));
+                modeManager -> new CreateObjectStrategy(rectFactory, modeManager), true));
         defs.add(new EditorToolDefinition(EditorMode.OVAL, "oval", ToolIcons.oval(),
-                modeManager -> new CreateObjectStrategy(ovalFactory, modeManager), true, ovalFactory, null));
+                modeManager -> new CreateObjectStrategy(ovalFactory, modeManager), true));
         return new EditorToolRegistry(defs);
     }
 

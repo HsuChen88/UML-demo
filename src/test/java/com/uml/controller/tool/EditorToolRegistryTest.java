@@ -28,10 +28,22 @@ class EditorToolRegistryTest {
     @Test
     void registryCanBeCreatedWithAdditionalDefinitionWithoutCanvasChanges() {
         EditorToolDefinition definition = new EditorToolDefinition(EditorMode.SELECT, "custom", new ImageIcon(),
-                modeManager -> new CanvasMouseStrategy() {}, false, null, null);
+                modeManager -> new CanvasMouseStrategy() {});
         EditorToolRegistry registry = new EditorToolRegistry(List.of(definition));
 
         assertSame(definition, registry.getDefinition(EditorMode.SELECT));
         assertNotNull(registry.createStrategyMap(new ModeManager()).get(EditorMode.SELECT));
+    }
+
+    @Test
+    void onlyObjectCreationToolsSupportCanvasDropCreation() {
+        EditorToolRegistry registry = EditorToolRegistry.createDefault();
+
+        assertTrue(registry.getDefinition(EditorMode.RECT).canvasDropCreatesObject());
+        assertTrue(registry.getDefinition(EditorMode.OVAL).canvasDropCreatesObject());
+        assertFalse(registry.getDefinition(EditorMode.SELECT).canvasDropCreatesObject());
+        assertFalse(registry.getDefinition(EditorMode.ASSOCIATION).canvasDropCreatesObject());
+        assertFalse(registry.getDefinition(EditorMode.GENERALIZATION).canvasDropCreatesObject());
+        assertFalse(registry.getDefinition(EditorMode.COMPOSITION).canvasDropCreatesObject());
     }
 }

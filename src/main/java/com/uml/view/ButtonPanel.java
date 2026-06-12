@@ -65,7 +65,7 @@ public class ButtonPanel extends JPanel implements ModeChangeListener { // 左�
 
                 @Override
                 public void mouseReleased(MouseEvent e) { // 放開時處理「從按鈕拖曳至畫布建立物件」（Use Case A）
-                    if (!def.objectCreation()) return; // 只有建立物件工具需要此邏輯
+                    if (!def.canvasDropCreatesObject()) return; // 只有支援拖放建立的工具需要此邏輯
 
                     // Swing mouse-grab：mousePressed 在 btn 上，mouseReleased 也送到 btn（即使滑鼠已移到畫布上）
                     // 將放開座標從 btn 的座標系轉換為 canvas 的座標系
