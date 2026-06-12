@@ -40,7 +40,8 @@ graph TB
         EM["EditorMode<br>模式列舉"]
         MCL["ModeChangeListener<br>模式變更觀察者"]
         subgraph STR["Strategy (com.uml.controller.strategy)"]
-            CMS["CanvasMouseStrategy<br>滑鼠事件策略 + paintOverlay hook"]
+            CMS["CanvasMouseStrategy<br>滑鼠事件 strategy  + paintOverlay hook"]
+            CEC["CanvasEditorContext<br>strategy 最小上下文"]
             SS["SelectStrategy<br>選取 / 移動 / 縮放 / 框選"]
             COS["CreateObjectStrategy<br>透過 DiagramObjectFactory 建立圖形"]
             CLS["CreateLinkStrategy<br>透過 DiagramLinkFactory 建立連線"]
@@ -96,15 +97,27 @@ graph TB
     MM --> MCL
     BP -.implements.-> MCL
     CP --> CMS
-    CMS --> CIS
-    CMS -.-> COS
-    CMS -.-> COC
-    CI --> MOC
-    CI --> GC
-    CI --> SLC
+    CP -.implements.-> CEC
+    CMS --> CEC
+    SS -.implements.-> CMS
+    COS -.implements.-> CMS
+    CLS -.implements.-> CMS
+    SS --> DOC
+    SS --> SEL
+    SS --> CIS
+    COS --> DOF
+    CLS --> DLF
+    CI <|.. COC
+    CI <|.. CLC
+    CI <|.. MOC
+    CI <|.. ROC
+    CI <|.. GC
+    CI <|.. UGC
+    CI <|.. SLC
     CH --> CI
     COC --> DOC
     COC --> SEL
+    CLC --> DOC
     MOC --> DOC
     MOC --> SEL
     ROC --> DOC
@@ -119,10 +132,16 @@ graph TB
     DOC --> UO
     DOC --> LO
     SEL --> DOC
-    UO --> CO
-    BO --> OO
-    PO --> AL
-    LO --> CML
+    UO <|-- BO
+    UO <|-- CO
+    BO <|-- RO
+    BO <|-- OO
+    PO <|.. BO
+    PR --> PO
+    LO --> PR
+    LO <|-- AL
+    LO <|-- GL
+    LO <|-- CML
 ```
 
 ---
@@ -142,7 +161,6 @@ classDiagram
         +indexOfObject(UMLObject) int
         +bringToFront(UMLObject)
         +findObjectAt(int, int) UMLObject
-        +findPortOwnerNearPort(int, int) PortOwner
         +findPortReferenceNearPoint(Point) PortReference
     }
 
@@ -170,8 +188,6 @@ classDiagram
 
     class UMLObject {
         <<abstract>>
-        -boolean selected
-        -boolean hovered
         -String labelName
         -Color labelColor
         +draw(Graphics2D)*
@@ -393,7 +409,7 @@ stateDiagram-v2
 
 ## 8. Command 與 Undo/Redo
 
-Command 不再操作 `CanvasPanel.rawAddObject()` 之類的 view adapter API。Command 只修改 `DiagramDocument`，必要時更新 `DiagramSelectionModel`。`CanvasPanel` 負責統一 `repaint()`。
+Command 不再操作 view adapter API。Command 只修改 `DiagramDocument`，必要時更新 `DiagramSelectionModel`。`CanvasPanel` 負責統一 `repaint()`。
 
 ```mermaid
 sequenceDiagram
@@ -506,13 +522,13 @@ mindmap
 
 - `DiagramSelectionModel` 管理 selected objects。
 - `CanvasInteractionState` 管理 hover、框選矩形、暫時連線預覽。
-- `UMLObject.selected` / `hovered` 暫時保留作為相容 flag，避免一次搬太深。
+- `UMLObject` 不再保存 selected / hovered flag；renderer 只根據 `CanvasRenderContext` 判斷互動視覺。
 
 這樣未來若同一份 diagram 有多個 view，不同 view 可以有不同 selection/hover，不會污染核心 document。
 
 ### 11.3 Strategy Pattern：隔離滑鼠互動模式
 
-`CanvasMouseStrategy` 讓 select、create object、create link 的滑鼠行為彼此獨立。新增一種互動模式時，只要新增 strategy 並註冊工具，不需要把一大串 if/switch 塞進 `CanvasPanel`。
+`CanvasMouseStrategy` 讓 select、create object、create link 的滑鼠行為彼此獨立。新增一種互動模式時，只要新增 strategy 並註冊工具，不需要把一大串 if/switch 塞進 `CanvasPanel`。Strategy 透過 `CanvasEditorContext` 存取 document、selection、interaction state 與 command API，不直接依賴具體 Swing component。
 
 這次新增 `paintOverlay(Graphics2D, CanvasRenderContext)` hook，讓每個 strategy 自己負責它的 overlay：
 
@@ -551,7 +567,7 @@ mindmap
 
 ### 11.6 Command Pattern：把 Undo/Redo 從 View 中解耦
 
-Command 仍維持 `undo()` / `redo()`，但目標改為 `DiagramDocument` 和必要的 `DiagramSelectionModel`。這讓 Command 不再需要 `CanvasPanel.rawAddObject()`，也不負責 repaint。
+Command 仍維持 `undo()` / `redo()`，但目標改為 `DiagramDocument` 和必要的 `DiagramSelectionModel`。這讓 Command 不再需要任何 `CanvasPanel` raw adapter，也不負責 repaint。
 
 好處是：
 
@@ -567,13 +583,13 @@ Command 仍維持 `undo()` / `redo()`，但目標改為 `DiagramDocument` 和必
 
 ### 11.8 Template Method：保留圖形與連線繪製骨架
 
-`BasicObject.draw()` 定義形狀、port、label 的繪製流程；子類只實作 `drawShape()` 與 `computePorts()`。`LinkObject.draw()` 定義線段繪製流程，子類只實作 `drawArrowHead()`。
+`BasicObject.draw()` 定義形狀與 label 的繪製流程；子類只實作 `drawShape()` 與 `computePorts()`。選取 / hover ports 由 `UMLObjectRenderer` 根據 `CanvasRenderContext` 繪製。`LinkObject.draw()` 定義線段繪製流程，子類只實作 `drawArrowHead()`。
 
 這保留現有行為與簡潔性，也避免為了重構一次搬動所有 rendering code。renderer layer 目前先委派既有 `draw()`，未來若要完全去除 model 對 `Graphics2D` 的依賴，可以逐步把實際繪製搬到 `UMLObjectRenderer` / `LinkRenderer`。
 
 ### 11.9 Renderer Layer：先建立邊界，不急著大搬繪圖細節
 
-`DiagramRenderer`、`UMLObjectRenderer`、`LinkRenderer`、`CanvasOverlayRenderer` 的目的，是讓 `CanvasPanel.paintComponent` 不再知道 diagram 的細節。短期它們仍呼叫 `object.draw()` 與 `link.draw()`，這是刻意取捨：
+`DiagramRenderer`、`UMLObjectRenderer`、`LinkRenderer`、`CanvasOverlayRenderer` 的目的，是讓 `CanvasPanel.paintComponent` 不再知道 diagram 的細節。`UMLObjectRenderer` 目前已接管 selected / hovered 視覺，並仍委派 object/link 本體繪製以降低風險，這是刻意取捨：
 
 - 降低一次性重構風險。
 - 保持視覺行為相容。
@@ -585,4 +601,4 @@ Command 仍維持 `undo()` / `redo()`，但目標改為 `DiagramDocument` 和必
 
 - 不改三個 link subclass 成 ArrowHead strategy，因為目前 link subclass 數量少，直接保留更單純。
 - 不移除逐行註解與 `System.out.println`，因為這次需求是架構重構，不是風格清理。
-- 不把 selection/hover flag 從 `UMLObject` 立刻刪除，因為 renderer 仍委派舊 `draw()`；先透過 `DiagramSelectionModel` / `CanvasInteractionState` 統一同步，後續再逐步清掉相容欄位。
+- 本次已刪除 `UMLObject` 的 selection/hover flag；後續仍可再進一步把 shape/link 本體繪製完全搬離 model。

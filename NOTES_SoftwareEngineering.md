@@ -67,7 +67,7 @@ public interface CanvasMouseStrategy {
 
 這個專案中：
 - `UMLObject` 是抽象類別：所有 UML 物件都有 `depth`、`selected` 等狀態
-- `CanvasMouseStrategy` 是介面：三種策略本質上是完全不同的類別，只是都能「回應滑鼠事件」
+- `CanvasMouseStrategy` 是介面：三種 strategy 本質上是完全不同的類別，只是都能「回應滑鼠事件」
 
 ---
 
@@ -634,7 +634,7 @@ mvn dependency:tree
 
 ## 六、七大設計模式詳解
 
-### 6.1 Strategy Pattern（策略模式）
+### 6.1 Strategy Pattern（ strategy 模式）
 
 **用途：** 把一系列「可互換的演算法」封裝成獨立的物件。
 
@@ -654,7 +654,7 @@ mvn dependency:tree
   }
 
 有 Strategy：
-  // CanvasPanel 只知道「呼叫當前策略的方法」
+  // CanvasPanel 只知道「呼叫當前 strategy 的方法」
   void mousePressed(MouseEvent e) {
       currentStrategy.onPressed(e, this);
   }

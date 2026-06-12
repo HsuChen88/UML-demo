@@ -24,6 +24,7 @@ graph TB
 
     subgraph STRATEGY["Controller Strategies"]
         CMS["CanvasMouseStrategy"]
+        CEC["CanvasEditorContext"]
         SS["SelectStrategy"]
         COS["CreateObjectStrategy"]
         CLS["CreateLinkStrategy"]
@@ -67,6 +68,8 @@ graph TB
     ETD --> CMS
 
     MM --> CMS
+    CP -.implements.-> CEC
+    CMS --> CEC
     CMS <|.. SS
     CMS <|.. COS
     CMS <|.. CLS
@@ -112,7 +115,6 @@ classDiagram
         +removeObject(UMLObject) boolean
         +bringToFront(UMLObject)
         +findObjectAt(int, int) UMLObject
-        +findPortOwnerNearPort(int, int) PortOwner
         +findPortReferenceNearPoint(Point) PortReference
     }
 
@@ -436,6 +438,6 @@ mindmap
 ## 11. Important Tradeoffs
 
 - `UMLObject.draw(Graphics2D)` and `LinkObject.draw(Graphics2D)` still exist. The renderer layer currently delegates to them to keep the refactor behavior-compatible.
-- `UMLObject.selected` and `UMLObject.hovered` still exist as compatibility flags. New flows go through `DiagramSelectionModel` and `CanvasInteractionState`.
+- `UMLObject.selected` and `UMLObject.hovered` have been removed. New flows use `DiagramSelectionModel` and `CanvasInteractionState` as the single sources of truth.
 - Link subclasses remain unchanged as requested. The current extensibility improvement is at endpoint creation (`PortOwner` / `PortReference`) and factory creation (`DiagramLinkFactory`), not at arrowhead composition.
-- `CanvasPanel.rawAddObject` and related raw APIs remain as compatibility adapters, but new Command code no longer depends on them.
+- `CanvasPanel.rawAddObject` and related raw APIs have been removed; Command code works through `DiagramDocument` and `DiagramSelectionModel`.
