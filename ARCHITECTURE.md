@@ -527,18 +527,18 @@ flowchart LR
 ```mermaid
 mindmap
   root((UML Editor 未來擴充點))
-    新增圖形
+    新增「圖形」
       新增 UMLObject 或 BasicObject 子類
       若可被連線則實作 PortOwner
       定義 ports 與 resize 規則
       新增 EditorToolDefinition
       提供 DiagramObjectFactory
-    新增連線類型
+    新增「連線」類型
       保留 LinkObject 子類設計
       提供 DiagramLinkFactory
       新增 EditorToolDefinition
       視需要補充 ToolIcons
-    新增互動模式
+    新增「互動」模式
       實作 CanvasMouseStrategy
       只依賴 CanvasEditorContext
       需要暫態視覺時覆寫 paintOverlay
@@ -548,11 +548,11 @@ mindmap
       CanvasInteractionState 保持暫態
       決定是否保存 selection
       將 UI 狀態與 diagram 結構分開
-    替換繪製後端
+    替換 「UI 界面後端」
       先替換 renderer collaborators
       逐步移出 model 的 Graphics2D 依賴
       保持 DiagramDocument 不變
-    新增連線端點能力
+    新增「連線端Port能力」
       新物件實作 PortOwner
       透過 PortReference 成為 link endpoint
       不必繼承 BasicObject
@@ -655,9 +655,3 @@ Command 仍維持 `undo()` / `redo()`，但目標改為 `DiagramDocument` 和必
 - 先讓 render pipeline 的依賴方向正確。
 
 未來若要輸出圖片、切換繪圖後端、或將 model 變成純資料，可以再逐步把 `Graphics2D` 依賴搬出 model。
-
-### 11.10 明確不做的事
-
-- 不改三個 link subclass 成 ArrowHead strategy，因為目前 link subclass 數量少，直接保留更單純。
-- 不移除逐行註解與 `System.out.println`，因為這次需求是架構重構，不是風格清理。
-- 本次已刪除 `UMLObject` 的 selection/hover flag；後續仍可再進一步把 shape/link 本體繪製完全搬離 model。
