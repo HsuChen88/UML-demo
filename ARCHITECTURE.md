@@ -134,53 +134,28 @@ graph TB
 
     MM --> EM
     MM --> MCL
-    BP -.implements.-> MCL
+    BP -.-> MCL
     CP --> CMS
-    CP -.implements.-> CEC
+    CP -.-> CEC
     CMS --> CEC
-    SS -.implements.-> CMS
-    COS -.implements.-> CMS
-    CLS -.implements.-> CMS
+    SS -.-> CMS
+    COS -.-> CMS
+    CLS -.-> CMS
     SS --> DOC
     SS --> SEL
     SS --> CIS
     COS --> DOF
     CLS --> DLF
-    CI <|.. COC
-    CI <|.. CLC
-    CI <|.. MOC
-    CI <|.. ROC
-    CI <|.. GC
-    CI <|.. UGC
-    CI <|.. SLC
-    CH --> CI
-    COC --> DOC
-    COC --> SEL
-    CLC --> DOC
-    MOC --> DOC
-    MOC --> SEL
-    ROC --> DOC
-    ROC --> SEL
-    GC --> DOC
-    GC --> SEL
-    UGC --> DOC
-    UGC --> SEL
-    SLC --> DOC
-    SLC --> SEL
-
-    DOC --> UO
-    DOC --> LO
-    SEL --> DOC
-    UO <|-- BO
-    UO <|-- CO
-    BO <|-- RO
-    BO <|-- OO
-    PO <|.. BO
+    CI -.-> CLC
+    CI -.-> ROC
+    CI -.-> UGC
+    CI -.-> BO
+    UO -.-> RO
+    BO -.-> BO
     PR --> PO
     LO --> PR
-    LO <|-- AL
-    LO <|-- GL
-    LO <|-- CML
+    LO -.-> GL
+    LO -.-> CML
 ```
 
 ---
