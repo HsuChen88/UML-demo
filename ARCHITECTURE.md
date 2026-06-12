@@ -4,6 +4,37 @@
 
 ---
 
+## 0. 專案交接導覽（Domain / Package Overview）
+
+如果你要接手這個專案，可以先用「編輯器核心資料、互動控制、Swing 外殼、繪製、命令歷史」幾個 domain 來理解，而不是從單一 UI 類別一路追。
+
+| 目錄 / Package | 設計用途 | 主要類別 | 維護時要注意 |
+|---|---|---|---|
+| `src/main/java/com/uml` | 應用程式入口 | `Main` | 只負責設定 Look & Feel 並在 EDT 建立 `MainFrame`，不要把 editor 流程塞到這裡。 |
+| `com.uml.model` | Diagram 的核心資料與狀態模型 | `DiagramDocument`, `DiagramSelectionModel`, `PortOwner`, `PortReference` | `DiagramDocument` 是 objects、links、z-order 的唯一結構來源；selection 由 `DiagramSelectionModel` 管理，不回寫到 `UMLObject`。 |
+| `com.uml.model.object` | UML 物件階層 | `UMLObject`, `BasicObject`, `RectObject`, `OvalObject`, `CompositeObject` | `BasicObject` 子類必須定義 ports、繪製形狀、resize constraint 與 resize anchor；群組用 `CompositeObject` 表示。 |
+| `com.uml.model.link` | UML 連線階層 | `LinkObject`, `AssociationLink`, `GeneralizationLink`, `CompositionLink` | link endpoint 是 `PortReference`，不是具體 `BasicObject`；目前保留三個 link subclass，暫不抽 arrow head strategy。 |
+| `com.uml.command` | Undo / Redo 的行為封裝 | `Command`, `CommandHistory`, `CreateObjectCommand`, `GroupCommand`, `SetLabelCommand` 等 | Command 只操作 `DiagramDocument` 與必要的 `DiagramSelectionModel`，不依賴 `CanvasPanel`、不自行 repaint。 |
+| `com.uml.controller.mode` | 編輯模式狀態與 Observer | `EditorMode`, `ModeManager`, `ModeChangeListener` | 模式切換由 `ModeManager` 廣播；`ButtonPanel` 更新高亮，`CanvasPanel` 切換 current strategy。 |
+| `com.uml.controller.strategy` | 滑鼠互動策略 | `CanvasMouseStrategy`, `CanvasEditorContext`, `SelectStrategy`, `CreateObjectStrategy`, `CreateLinkStrategy` | Strategy 只依賴 `CanvasEditorContext`，不要直接依賴 Swing `CanvasPanel`。需要畫暫態視覺時覆寫 `paintOverlay`。 |
+| `com.uml.controller.tool` | 工具註冊與 factory | `EditorToolRegistry`, `EditorToolDefinition`, `DiagramObjectFactory`, `DiagramLinkFactory` | 新增工具時優先新增 tool definition；避免把工具清單散落在 `ButtonPanel` 和 `CanvasPanel`。 |
+| `com.uml.view` | Swing 視窗與 adapter | `MainFrame`, `CanvasPanel`, `ButtonPanel`, `LabelDialog`, `CanvasInteractionState` | `CanvasPanel` 是 Swing adapter：轉發事件、建立 render context、執行 command、repaint。hover、rubber band、temp link 放在 `CanvasInteractionState`。 |
+| `com.uml.view.renderer` | 畫布繪製 pipeline | `DiagramRenderer`, `UMLObjectRenderer`, `LinkRenderer`, `CanvasOverlayRenderer`, `CanvasRenderContext` | selected / hovered 視覺由 renderer 根據 context 判斷；model 的 `draw()` 目前仍畫本體，未來可逐步移出 AWT 依賴。 |
+| `com.uml.view.toolicon` | 工具列圖示 | `ToolIcons` | 集中產生工具圖示，讓 `EditorToolRegistry` 可提供 icon，`ButtonPanel` 不必知道圖示細節。 |
+| `com.uml.util` | 共用常數與 hit-test helper | `UMLConstants`, `HitTestUtil` | 放跨 domain 且無狀態的小工具；避免把 domain 流程藏進 util。 |
+| `src/test/java/com/uml` | 單元測試 | command/model/tool registry tests | 測試重點放在 document、selection、command、registry 等不需要啟動 Swing 的核心邏輯。 |
+
+目前最重要的互動關係可以這樣記：
+
+1. `MainFrame` 組裝 `ModeManager`、`EditorToolRegistry`、`CanvasPanel`、`ButtonPanel`。
+2. `ButtonPanel` 從 `EditorToolRegistry` 建工具按鈕，點擊後只切換 `ModeManager`。
+3. `CanvasPanel` 從 `EditorToolRegistry` 建 strategy map，收到滑鼠事件後把事件交給目前 `CanvasMouseStrategy`。
+4. Strategy 透過 `CanvasEditorContext` 讀寫 document、selection、interaction state，並透過 command API 產生可 undo/redo 的變更。
+5. `CanvasPanel.paintComponent` 建立 `CanvasRenderContext`，依序呼叫 diagram renderer 與 overlay renderer。
+6. `DiagramRenderer` 畫 document 結構，`UMLObjectRenderer` 根據 selection/hover context 補 ports 或 composite border。
+
+---
+
 ## 1. 分層架構（Layered Architecture）
 
 ```mermaid
@@ -18,6 +49,7 @@ graph TB
         CP["CanvasPanel<br>事件路由 + repaint adapter"]
         LD["LabelDialog<br>標籤 / 顏色編輯"]
         CIS["CanvasInteractionState<br>hover / rubber band / temp link"]
+        TI["ToolIcons<br>工具圖示"]
     end
 
     subgraph RENDER["Renderer Layer (com.uml.view.renderer)"]
@@ -35,10 +67,13 @@ graph TB
         DLF["DiagramLinkFactory<br>建立 LinkObject"]
     end
 
-    subgraph CTL["Controller (com.uml.controller)"]
+    subgraph MODE["Mode System (com.uml.controller.mode)"]
         MM["ModeManager<br>目前模式 + observer"]
         EM["EditorMode<br>模式列舉"]
         MCL["ModeChangeListener<br>模式變更觀察者"]
+    end
+
+    subgraph CTL["Controller Strategy (com.uml.controller.strategy)"]
         subgraph STR["Strategy (com.uml.controller.strategy)"]
             CMS["CanvasMouseStrategy<br>滑鼠事件 strategy  + paintOverlay hook"]
             CEC["CanvasEditorContext<br>strategy 最小上下文"]
@@ -88,12 +123,16 @@ graph TB
     MF --> CP
     MF --> LD
     MF --> ETR
+    MF --> MM
     BP --> ETR
+    BP --> TI
     CP --> ETR
     ETR --> ETD
+    ETR --> TI
     ETD --> DOF
     ETD --> DLF
 
+    MM --> EM
     MM --> MCL
     BP -.implements.-> MCL
     CP --> CMS
@@ -214,8 +253,8 @@ classDiagram
         +getPorts() List~Point~
         +getPort(int) Point
         +getNearestPortIndex(Point) int
-        +getResizeConstraint(int) ResizeConstraint
-        +getResizeAnchor(int) Point
+        +getResizeConstraint(int) ResizeConstraint*
+        +getResizeAnchor(int) Point*
         +setBounds(int, int, int, int)
         #computePorts() List~Point~*
         #drawShape(Graphics2D)*
@@ -264,6 +303,36 @@ classDiagram
 
 ---
 
+## 2.1 Strategy 與 Context 邊界（Dependency Boundary）
+
+滑鼠 strategy 不直接依賴 `CanvasPanel`。`CanvasPanel` 只是目前的 Swing adapter，並透過 `CanvasEditorContext` 暴露 strategy 真正需要的最小能力。
+
+```mermaid
+graph LR
+    CP["CanvasPanel<br>implements CanvasEditorContext"]
+    CEC["CanvasEditorContext<br>最小編輯器上下文"]
+    CMS["CanvasMouseStrategy"]
+    SS["SelectStrategy"]
+    COS["CreateObjectStrategy"]
+    CLS["CreateLinkStrategy"]
+    DOC["DiagramDocument"]
+    SEL["DiagramSelectionModel"]
+    CIS["CanvasInteractionState"]
+    CMD["Command API<br>execute / pushHistory / repaintCanvas"]
+
+    CP -.implements.-> CEC
+    SS -.implements.-> CMS
+    COS -.implements.-> CMS
+    CLS -.implements.-> CMS
+    CMS --> CEC
+    CEC --> DOC
+    CEC --> SEL
+    CEC --> CIS
+    CEC --> CMD
+```
+
+---
+
 ## 3. 工具註冊與模式切換（Tool Registry Flow）
 
 `EditorToolRegistry` 是工具系統的唯一來源。`ButtonPanel` 用它建立按鈕，`CanvasPanel` 用它建立 strategy map，因此新增工具不需要分散修改 UI 與 canvas。
@@ -272,12 +341,14 @@ classDiagram
 sequenceDiagram
     participant MF as MainFrame
     participant Registry as EditorToolRegistry
+    participant Icons as ToolIcons
     participant BP as ButtonPanel
     participant CP as CanvasPanel
     participant MM as ModeManager
     participant Strategy as CanvasMouseStrategy
 
     MF->>Registry: createDefault()
+    Registry->>Icons: select / link / shape icons
     MF->>CP: new(modeManager, registry)
     CP->>Registry: createStrategyMap(modeManager)
     Registry-->>CP: Map<EditorMode, CanvasMouseStrategy>
@@ -315,6 +386,8 @@ sequenceDiagram
     CP->>DR: render(g2d, context)
     DR->>OR: render each UMLObject
     OR->>OR: object.draw(g2d)
+    OR->>Context: check selection / hover
+    OR->>OR: draw ports or composite border
     DR->>LR: render each LinkObject
     LR->>LR: link.draw(g2d)
     CP->>Overlay: render(g2d, context, currentStrategy)
@@ -329,6 +402,7 @@ sequenceDiagram
 sequenceDiagram
     participant User
     participant CP as CanvasPanel
+    participant Context as CanvasEditorContext
     participant Strategy as CreateObjectStrategy
     participant Factory as DiagramObjectFactory
     participant Cmd as CreateObjectCommand
@@ -337,15 +411,15 @@ sequenceDiagram
     participant Hist as CommandHistory
 
     User->>CP: mouseReleased
-    CP->>Strategy: onReleased(event, canvas)
+    CP->>Strategy: onReleased(event, context)
     Strategy->>Factory: create(x, y, width, height)
     Factory-->>Strategy: UMLObject
-    Strategy->>CP: execute(CreateObjectCommand)
-    CP->>Cmd: redo()
+    Strategy->>Context: execute(CreateObjectCommand)
+    Context->>Cmd: redo()
     Cmd->>Doc: addObject(created)
     Cmd->>Sel: selectOnly(created)
-    CP->>Hist: push(command)
-    CP->>CP: repaint()
+    Context->>Hist: push(command)
+    Context->>CP: repaintCanvas()
 ```
 
 ---
@@ -356,6 +430,7 @@ sequenceDiagram
 sequenceDiagram
     participant User
     participant CP as CanvasPanel
+    participant Context as CanvasEditorContext
     participant Strategy as CreateLinkStrategy
     participant State as CanvasInteractionState
     participant Doc as DiagramDocument
@@ -363,24 +438,24 @@ sequenceDiagram
     participant Cmd as CreateLinkCommand
 
     User->>CP: mousePressed on source port
-    CP->>Strategy: onPressed(event, canvas)
+    CP->>Strategy: onPressed(event, context)
     Strategy->>Doc: findPortReferenceNearPoint(point)
     Doc-->>Strategy: source PortReference
     Strategy->>State: setTemporaryLink(source, point)
 
     User->>CP: mouseDragged
-    CP->>Strategy: onDragged(event, canvas)
+    CP->>Strategy: onDragged(event, context)
     Strategy->>State: setTemporaryLink(source, currentPoint)
-    CP->>CP: repaint()
+    Strategy->>Context: repaintCanvas()
 
     User->>CP: mouseReleased on target port
-    CP->>Strategy: onReleased(event, canvas)
+    CP->>Strategy: onReleased(event, context)
     Strategy->>State: clearTemporaryLink()
     Strategy->>Doc: findPortReferenceNearPoint(point)
     Doc-->>Strategy: target PortReference
     Strategy->>Factory: create(source, target)
     Factory-->>Strategy: LinkObject
-    Strategy->>CP: execute(CreateLinkCommand)
+    Strategy->>Context: execute(CreateLinkCommand)
     Cmd->>Doc: addLink(link)
 ```
 
@@ -476,27 +551,36 @@ flowchart LR
 
 ```mermaid
 mindmap
-  root((UML Editor Extension Points))
-    New Shape
-      Create UMLObject or BasicObject subclass
-      Implement PortOwner if linkable
-      Add EditorToolDefinition
-      Provide DiagramObjectFactory
-    New Link Type
-      Keep LinkObject subclass
-      Provide DiagramLinkFactory
-      Add EditorToolDefinition
-    New Interaction Mode
-      Implement CanvasMouseStrategy
-      Override paintOverlay if needed
-      Register in EditorToolRegistry
-    Save Load
-      Serialize DiagramDocument
-      Keep CanvasInteractionState transient
-      Decide whether selection is saved
-    Renderer Replacement
-      Replace DiagramRenderer collaborators
-      Keep DiagramDocument unchanged
+  root((UML Editor 未來擴充點))
+    新增圖形
+      新增 UMLObject 或 BasicObject 子類
+      若可被連線則實作 PortOwner
+      定義 ports 與 resize 規則
+      新增 EditorToolDefinition
+      提供 DiagramObjectFactory
+    新增連線類型
+      保留 LinkObject 子類設計
+      提供 DiagramLinkFactory
+      新增 EditorToolDefinition
+      視需要補充 ToolIcons
+    新增互動模式
+      實作 CanvasMouseStrategy
+      只依賴 CanvasEditorContext
+      需要暫態視覺時覆寫 paintOverlay
+      註冊到 EditorToolRegistry
+    儲存與載入
+      序列化 DiagramDocument
+      CanvasInteractionState 保持暫態
+      決定是否保存 selection
+      將 UI 狀態與 diagram 結構分開
+    替換繪製後端
+      先替換 renderer collaborators
+      逐步移出 model 的 Graphics2D 依賴
+      保持 DiagramDocument 不變
+    新增連線端點能力
+      新物件實作 PortOwner
+      透過 PortReference 成為 link endpoint
+      不必繼承 BasicObject
 ```
 
 ---
