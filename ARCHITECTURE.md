@@ -62,9 +62,9 @@ graph TB
 
     subgraph TOOL["Tool System (com.uml.controller.tool)"]
         ETR["EditorToolRegistry<br>集中註冊工具"]
-        ETD["EditorToolDefinition<br>工具定義"]
-        DOF["DiagramObjectFactory<br>建立 UMLObject"]
-        DLF["DiagramLinkFactory<br>建立 LinkObject"]
+        ETD["EditorToolDefinition<br>UI 資訊 + strategy 建立函式"]
+        DOF["DiagramObjectFactory<br>物件建立函式介面"]
+        DLF["DiagramLinkFactory<br>連線建立函式介面"]
     end
 
     subgraph MODE["Mode System (com.uml.controller.mode)"]
@@ -78,8 +78,8 @@ graph TB
             CMS["CanvasMouseStrategy<br>滑鼠事件 strategy  + paintOverlay hook"]
             CEC["CanvasEditorContext<br>strategy 最小上下文"]
             SS["SelectStrategy<br>選取 / 移動 / 縮放 / 框選"]
-            COS["CreateObjectStrategy<br>透過 DiagramObjectFactory 建立圖形"]
-            CLS["CreateLinkStrategy<br>透過 DiagramLinkFactory 建立連線"]
+            COS["CreateObjectStrategy<br>透過物件建立函式建立圖形"]
+            CLS["CreateLinkStrategy<br>透過連線建立函式建立連線"]
         end
     end
 
@@ -125,37 +125,74 @@ graph TB
     MF --> ETR
     MF --> MM
     BP --> ETR
-    BP --> TI
     CP --> ETR
+    CP --> DR
+    CP --> COR
+    CP --> DOC
+    CP --> SEL
+    CP --> CIS
+    CP --> CH
     ETR --> ETD
     ETR --> TI
-    ETD --> DOF
-    ETD --> DLF
+    ETR --> DOF
+    ETR --> DLF
+    ETD --> CMS
 
     MM --> EM
     MM --> MCL
-    BP -.-> MCL
+    BP --> MM
+    BP -.implements.-> MCL
     CP --> CMS
-    CP -.-> CEC
+    CP -.implements.-> CEC
     CMS --> CEC
-    SS -.-> CMS
-    COS -.-> CMS
-    CLS -.-> CMS
-    SS --> DOC
-    SS --> SEL
-    SS --> CIS
+    SS -.implements.-> CMS
+    COS -.implements.-> CMS
+    CLS -.implements.-> CMS
+    CEC --> DOC
+    CEC --> SEL
+    CEC --> CIS
+    CEC --> CI
     COS --> DOF
     CLS --> DLF
-    CI -.-> CLC
-    CI -.-> ROC
-    CI -.-> UGC
-    CI -.-> BO
-    UO -.-> RO
-    BO -.-> BO
+    DOF --> UO
+    DLF --> LO
+    CH --> CI
+    COC --> DOC
+    COC --> SEL
+    CLC --> DOC
+    MOC --> DOC
+    MOC --> SEL
+    ROC --> DOC
+    ROC --> SEL
+    GC --> DOC
+    GC --> SEL
+    UGC --> DOC
+    UGC --> SEL
+    SLC --> DOC
+    SLC --> SEL
+
+    DR --> UOR
+    DR --> LR
+    DR --> DOC
+    UOR --> SEL
+    UOR --> CIS
+    UOR --> BO
+    UOR --> CO
+    LR --> LO
+    COR --> CMS
+
+    DOC --> UO
+    DOC --> LO
+    SEL --> DOC
+    BO --> PO
+    RO --> BO
+    OO --> BO
+    CO --> UO
     PR --> PO
     LO --> PR
-    LO -.-> GL
-    LO -.-> CML
+    AL --> LO
+    GL --> LO
+    CML --> LO
 ```
 
 ---
@@ -308,9 +345,62 @@ graph LR
 
 ---
 
+## 2.2 工具定義與建立函式（Tool Definition）
+
+`EditorToolDefinition` 現在刻意維持精簡：它只描述工具列需要顯示什麼、如何建立對應 strategy，以及此工具是否支援從工具列拖放到畫布建立物件。具體物件與連線的 constructor reference 只在 `EditorToolRegistry.createDefault()` 組裝 strategy 時使用。
+
+```mermaid
+classDiagram
+    class EditorToolRegistry {
+        -List~EditorToolDefinition~ definitions
+        -Map~EditorMode, EditorToolDefinition~ definitionsByMode
+        +createDefault() EditorToolRegistry
+        +getDefinitions() List~EditorToolDefinition~
+        +getDefinition(EditorMode) EditorToolDefinition
+        +createStrategyMap(ModeManager) Map~EditorMode, CanvasMouseStrategy~
+    }
+
+    class EditorToolDefinition {
+        <<record>>
+        +EditorMode mode
+        +String label
+        +Icon icon
+        +Function~ModeManager, CanvasMouseStrategy~ strategyFactory
+        +boolean canvasDropCreatesObject
+        +createStrategy(ModeManager) CanvasMouseStrategy
+    }
+
+    class DiagramObjectFactory {
+        <<functional interface>>
+        +create(int, int, int, int) UMLObject
+    }
+
+    class DiagramLinkFactory {
+        <<functional interface>>
+        +create(PortReference, PortReference) LinkObject
+    }
+
+    class CreateObjectStrategy {
+        -DiagramObjectFactory objectFactory
+    }
+
+    class CreateLinkStrategy {
+        -DiagramLinkFactory linkFactory
+    }
+
+    EditorToolRegistry --> EditorToolDefinition
+    EditorToolDefinition --> CanvasMouseStrategy
+    CreateObjectStrategy --> DiagramObjectFactory
+    CreateLinkStrategy --> DiagramLinkFactory
+    CanvasMouseStrategy <|.. CreateObjectStrategy
+    CanvasMouseStrategy <|.. CreateLinkStrategy
+```
+
+---
+
 ## 3. 工具註冊與模式切換（Tool Registry Flow）
 
-`EditorToolRegistry` 是工具系統的唯一來源。`ButtonPanel` 用它建立按鈕，`CanvasPanel` 用它建立 strategy map，因此新增工具不需要分散修改 UI 與 canvas。
+`EditorToolRegistry` 是工具系統的唯一來源。`ButtonPanel` 用它建立按鈕，`CanvasPanel` 用它建立 strategy map；`EditorToolDefinition` 只保存 UI 資訊、strategy 建立函式，以及是否支援從工具列拖放到畫布建立物件。
 
 ```mermaid
 sequenceDiagram
@@ -337,6 +427,9 @@ sequenceDiagram
     MM-->>CP: onModeChanged(newMode, prevMode)
     CP->>CP: currentStrategy = strategyMap.get(newMode)
     CP->>Strategy: route mouse events
+
+    BP->>BP: if definition.canvasDropCreatesObject()
+    BP->>CP: simulateRelease(canvasPoint)
 ```
 
 ---
@@ -379,7 +472,7 @@ sequenceDiagram
     participant CP as CanvasPanel
     participant Context as CanvasEditorContext
     participant Strategy as CreateObjectStrategy
-    participant Factory as DiagramObjectFactory
+    participant ObjectCreator as DiagramObjectFactory
     participant Cmd as CreateObjectCommand
     participant Doc as DiagramDocument
     participant Sel as DiagramSelectionModel
@@ -387,8 +480,8 @@ sequenceDiagram
 
     User->>CP: mouseReleased
     CP->>Strategy: onReleased(event, context)
-    Strategy->>Factory: create(x, y, width, height)
-    Factory-->>Strategy: UMLObject
+    Strategy->>ObjectCreator: create(x, y, width, height)
+    ObjectCreator-->>Strategy: UMLObject
     Strategy->>Context: execute(CreateObjectCommand)
     Context->>Cmd: redo()
     Cmd->>Doc: addObject(created)
@@ -409,7 +502,7 @@ sequenceDiagram
     participant Strategy as CreateLinkStrategy
     participant State as CanvasInteractionState
     participant Doc as DiagramDocument
-    participant Factory as DiagramLinkFactory
+    participant LinkCreator as DiagramLinkFactory
     participant Cmd as CreateLinkCommand
 
     User->>CP: mousePressed on source port
@@ -428,8 +521,8 @@ sequenceDiagram
     Strategy->>State: clearTemporaryLink()
     Strategy->>Doc: findPortReferenceNearPoint(point)
     Doc-->>Strategy: target PortReference
-    Strategy->>Factory: create(source, target)
-    Factory-->>Strategy: LinkObject
+    Strategy->>LinkCreator: create(source, target)
+    LinkCreator-->>Strategy: LinkObject
     Strategy->>Context: execute(CreateLinkCommand)
     Cmd->>Doc: addLink(link)
 ```
@@ -548,11 +641,11 @@ mindmap
       CanvasInteractionState 保持暫態
       決定是否保存 selection
       將 UI 狀態與 diagram 結構分開
-    替換 「UI 界面後端」
+    替換「繪製後端」
       先替換 renderer collaborators
       逐步移出 model 的 Graphics2D 依賴
       保持 DiagramDocument 不變
-    新增「連線端Port能力」
+    新增「可連線端點」能力
       新物件實作 PortOwner
       透過 PortReference 成為 link endpoint
       不必繼承 BasicObject
