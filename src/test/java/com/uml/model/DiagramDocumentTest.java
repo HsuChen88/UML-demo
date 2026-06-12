@@ -1,5 +1,9 @@
 package com.uml.model;
 
+import com.uml.model.object.BasicObject;
+import com.uml.model.object.OvalObject;
+import com.uml.model.object.RectObject;
+import com.uml.model.object.UMLObject;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -47,7 +51,6 @@ class DiagramDocumentTest {
 
         document.addObject(rect);
 
-        assertSame(rect, document.findPortOwnerNearPort(10, 20));
         PortReference reference = document.findPortReferenceNearPoint(rect.getPort(0));
 
         assertNotNull(reference);

@@ -1,27 +1,24 @@
 package com.uml.view;
 
 import com.uml.model.PortReference;
-import com.uml.model.UMLObject;
+import com.uml.model.object.UMLObject;
 
 import java.awt.*;
 
 public class CanvasInteractionState { // 管理畫布互動暫態，例如 hover、框選與暫時連線預覽
 
-    private UMLObject hoveredObject = null; // 滑鼠目前懸停的物件
+    private UMLObject hoveredObject = null; // 滑鼠目前 hover 的物件
     private Rectangle rubberBand = null; // 框選矩形
     private PortReference temporaryLinkSource = null; // 暫時連線起點 port
     private Point temporaryLinkEnd = null; // 暫時連線終點座標
 
-    public UMLObject getHoveredObject() { return hoveredObject; } // 取得目前懸停物件
+    public UMLObject getHoveredObject() { return hoveredObject; } // 取得目前 hover 物件
 
-    public void setHoveredObject(UMLObject obj) { // 設定懸停物件並同步舊有 hovered flag
-        if (hoveredObject == obj) return;
-        if (hoveredObject != null) hoveredObject.setHovered(false);
+    public void setHoveredObject(UMLObject obj) { // 設定 hover 物件
         hoveredObject = obj;
-        if (hoveredObject != null) hoveredObject.setHovered(true);
     }
 
-    public void clearHover() { // 清除懸停狀態
+    public void clearHover() { // 清除 hover 狀態
         setHoveredObject(null);
     }
 

@@ -1,6 +1,5 @@
 package com.uml.model.link;
 
-import com.uml.model.BasicObject;
 import com.uml.model.PortReference;
 
 import java.awt.*;
@@ -10,11 +9,6 @@ public class AssociationLink extends LinkObject { // 關聯連線：實線 + 目
 
     private static final int ARROW_LEN   = 14;                    // 箭頭長度（像素）
     private static final double ARROW_ANGLE = Math.toRadians(25); // 箭頭半角（弧度），控制箭頭的張開程度
-
-    public AssociationLink(BasicObject source, int srcPort, // 建構子：接收起點與終點的物件及 port 索引
-                           BasicObject target, int tgtPort) {
-        super(source, srcPort, target, tgtPort);            // 委派給父類別建構子
-    }
 
     public AssociationLink(PortReference source, PortReference target) { // 建構子：接收起點與終點的 port reference
         super(source, target);

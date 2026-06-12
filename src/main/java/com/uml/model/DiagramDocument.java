@@ -1,6 +1,7 @@
 package com.uml.model;
 
 import com.uml.model.link.LinkObject;
+import com.uml.model.object.UMLObject;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -62,17 +63,6 @@ public class DiagramDocument { // 一份 UML diagram 的結構資料，負責 ob
         for (int i = objects.size() - 1; i >= 0; i--) {
             UMLObject obj = objects.get(i);
             if (obj.contains(x, y)) return obj;
-        }
-        return null;
-    }
-
-    public PortOwner findPortOwnerNearPort(int x, int y) { // 找出滑鼠附近具有 port 的物件
-        Point mouse = new Point(x, y);
-        for (int i = objects.size() - 1; i >= 0; i--) {
-            UMLObject obj = objects.get(i);
-            if (obj instanceof PortOwner owner && owner.getNearestPortIndex(mouse) != -1) {
-                return owner;
-            }
         }
         return null;
     }

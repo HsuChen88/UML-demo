@@ -3,10 +3,9 @@ package com.uml.controller.strategy;
 import com.uml.command.MoveObjectsCommand;
 import com.uml.command.ResizeObjectCommand;
 import com.uml.model.DiagramSelectionModel;
-import com.uml.model.BasicObject;
-import com.uml.model.UMLObject;
+import com.uml.model.object.BasicObject;
+import com.uml.model.object.UMLObject;
 import com.uml.util.HitTestUtil;
-import com.uml.view.CanvasPanel;
 import com.uml.view.renderer.CanvasRenderContext;
 import com.uml.util.UMLConstants;
 
@@ -31,7 +30,7 @@ import java.util.Map;
  *   Resize — before-bounds snapshotted at onPressed, ResizeObjectCommand pushed at onReleased.
  *   Only pushes if the object actually moved/resized (avoids empty history entries on plain clicks).
  */
-public class SelectStrategy implements CanvasMouseStrategy { // 選取策略，處理 Use Case C（選取/懸停）、E（移動）、F（縮放）
+public class SelectStrategy implements CanvasMouseStrategy { // 選取 strategy ，處理 Use Case C（選取/ hover ）、E（移動）、F（縮放）
 
     private enum SubState { IDLE, DRAGGING_OBJECT, RESIZING, RUBBER_BANDING } // 選取模式內部的子狀態機
 
@@ -49,12 +48,13 @@ public class SelectStrategy implements CanvasMouseStrategy { // 選取策略，�
 
     // ── mousePressed ─────────────────────────────────────
     @Override
-    public void onPressed(MouseEvent e, CanvasPanel canvas) { // 滑鼠按下：決定進入哪個子狀態
+    public void onPressed(MouseEvent e, CanvasEditorContext context) { // 滑鼠按下：決定進入哪個子狀態
         pressPoint = e.getPoint(); // 記錄按下位置
+        DiagramSelectionModel selectionModel = context.getSelectionModel(); // 取得 selection model
 
         // 1. Port hit-test on selected BasicObject → resize
-        for (UMLObject obj : canvas.getObjects()) { // 遍歷所有物件，優先檢查是否按到 port
-            if (canvas.getSelectionModel().isSelected(obj) && obj instanceof BasicObject bo) { // 只對已選取的 BasicObject 做 port 測試
+        for (UMLObject obj : context.getDocument().getObjects()) { // 遍歷所有物件，優先檢查是否按到 port
+            if (selectionModel.isSelected(obj) && obj instanceof BasicObject bo) { // 只對已選取的 BasicObject 做 port 測試
                 int pi = bo.getNearestPortIndex(pressPoint); // 找出最近的 port 索引
                 if (pi != -1) { // 若按下位置靠近某個 port
                     subState    = SubState.RESIZING; // 進入縮放子狀態
@@ -70,62 +70,63 @@ public class SelectStrategy implements CanvasMouseStrategy { // 選取策略，�
         }
 
         // 2. Object hit-test → move
-        UMLObject hit = canvas.findObjectAt(e.getX(), e.getY()); // 找出被點擊的物件
+        UMLObject hit = context.getDocument().findObjectAt(e.getX(), e.getY()); // 找出被點擊的物件
         if (hit != null) { // 若點擊到物件
-            if (!hit.isSelected()) { // 若該物件尚未被選取
-                canvas.getSelectionModel().selectOnly(hit); // 選取被點擊的物件
-                canvas.bringToFront(hit); // 將物件移到最上層
+            if (!selectionModel.isSelected(hit)) { // 若該物件尚未被選取
+                selectionModel.selectOnly(hit); // 選取被點擊的物件
+                context.getDocument().bringToFront(hit); // 將物件移到最上層
             }
             subState   = SubState.DRAGGING_OBJECT; // 進入拖曳子狀態
             dragTarget = hit; // 記錄被拖曳的物件
             // Snapshot before-positions of ALL selected objects for undo
             moveBefore = new LinkedHashMap<>(); // 建立移動前快照 Map
-            for (UMLObject obj : canvas.getSelectionModel().getSelectedObjects()) { // 對所有已選取物件做快照
+            for (UMLObject obj : selectionModel.getSelectedObjects()) { // 對所有已選取物件做快照
                 Rectangle b = obj.getBounds(); // 取得物件邊界
                 moveBefore.put(obj, new Point(b.x, b.y)); // 記錄按下時的位置
             }
-            canvas.repaint(); // 重繪以顯示選取狀態
+            context.repaintCanvas(); // 重繪以顯示選取狀態
             return; // 找到物件則直接返回
         }
 
         // 3. Empty space → rubber-band
-        canvas.getSelectionModel().clearSelection(); // 點擊空白處先清除所有選取
+        selectionModel.clearSelection(); // 點擊空白處先清除所有選取
         subState = SubState.RUBBER_BANDING; // 進入框選子狀態
         rubberX1 = e.getX(); // 記錄框選起始 x
         rubberY1 = e.getY(); // 記錄框選起始 y
-        canvas.setRubberBand(null); // 清除舊的框選矩形
-        canvas.repaint(); // 重繪
+        context.getInteractionState().setRubberBand(null); // 清除舊的框選矩形
+        context.repaintCanvas(); // 重繪
     }
 
     // ── mouseDragged ─────────────────────────────────────
     @Override
-    public void onDragged(MouseEvent e, CanvasPanel canvas) { // 滑鼠拖曳：根據子狀態執行對應動作
+    public void onDragged(MouseEvent e, CanvasEditorContext context) { // 滑鼠拖曳：根據子狀態執行對應動作
         switch (subState) { // 依子狀態分派
             case DRAGGING_OBJECT -> { // 拖曳物件
                 int dx = e.getX() - pressPoint.x; // 計算水平位移
                 int dy = e.getY() - pressPoint.y; // 計算垂直位移
-                for (UMLObject obj : canvas.getSelectionModel().getSelectedObjects()) { // 移動所有已選取物件
+                for (UMLObject obj : context.getSelectionModel().getSelectedObjects()) { // 移動所有已選取物件
                     obj.move(dx, dy); // 以相對位移移動物件
                 }
                 pressPoint = e.getPoint(); // 更新按下點為目前位置（增量式位移）
-                canvas.repaint(); // 重繪
+                context.repaintCanvas(); // 重繪
             }
             case RESIZING -> { // 縮放物件
                 if (dragTarget instanceof BasicObject bo) { // 確認目標是 BasicObject
                     applyResize(bo, e.getX(), e.getY()); // 套用縮放計算
-                    canvas.repaint(); // 重繪
+                    context.repaintCanvas(); // 重繪
                 }
             }
             case RUBBER_BANDING -> { // 框選
                 Rectangle r = HitTestUtil.normalise(rubberX1, rubberY1, e.getX(), e.getY()); // 計算標準化矩形（確保寬高為正）
-                canvas.setRubberBand(r); // 更新框選矩形並重繪
+                context.getInteractionState().setRubberBand(r); // 更新框選矩形
+                context.repaintCanvas(); // 重繪
             }
         }
     }
 
     // ── mouseReleased ─────────────────────────────────────
     @Override
-    public void onReleased(MouseEvent e, CanvasPanel canvas) { // 滑鼠放開：完成操作並推入命令歷史
+    public void onReleased(MouseEvent e, CanvasEditorContext context) { // 滑鼠放開：完成操作並推入命令歷史
         if (subState == SubState.DRAGGING_OBJECT && moveBefore != null) { // 若是拖曳完成
             // Build after-snapshot and push only if something actually moved
             Map<UMLObject, Point> moveAfter = new LinkedHashMap<>(); // 建立移動後快照 Map
@@ -136,7 +137,7 @@ public class SelectStrategy implements CanvasMouseStrategy { // 選取策略，�
             boolean moved = moveBefore.entrySet().stream() // 比較前後位置，判斷是否真的移動過
                     .anyMatch(en -> !en.getValue().equals(moveAfter.get(en.getKey()))); // 若任何物件位置改變
             if (moved) { // 只有真正移動才推入歷史（避免空記錄）
-                canvas.pushHistory(new MoveObjectsCommand(canvas.getDocument(), canvas.getSelectionModel(), moveBefore, moveAfter)); // 推入移動命令
+                context.pushHistory(new MoveObjectsCommand(context.getDocument(), context.getSelectionModel(), moveBefore, moveAfter)); // 推入移動命令
             }
             moveBefore = null; // 清除快照
         }
@@ -144,7 +145,7 @@ public class SelectStrategy implements CanvasMouseStrategy { // 選取策略，�
         if (subState == SubState.RESIZING && dragTarget instanceof BasicObject bo) { // 若是縮放完成
             int ax = bo.getX(), ay = bo.getY(), aw = bo.getWidth(), ah = bo.getHeight(); // 取得縮放後的邊界
             if (ax != resizeBX || ay != resizeBY || aw != resizeBW || ah != resizeBH) { // 只有真正縮放才推入歷史
-                canvas.pushHistory(new ResizeObjectCommand(canvas.getDocument(), canvas.getSelectionModel(), bo, // 推入縮放命令（含前後邊界快照）
+                context.pushHistory(new ResizeObjectCommand(context.getDocument(), context.getSelectionModel(), bo, // 推入縮放命令（含前後邊界快照）
                         resizeBX, resizeBY, resizeBW, resizeBH, // 縮放前的邊界
                         ax, ay, aw, ah)); // 縮放後的邊界
             }
@@ -152,13 +153,13 @@ public class SelectStrategy implements CanvasMouseStrategy { // 選取策略，�
 
         if (subState == SubState.RUBBER_BANDING) { // 若是框選完成
             Rectangle sel = HitTestUtil.normalise(rubberX1, rubberY1, e.getX(), e.getY()); // 計算最終框選矩形
-            canvas.setRubberBand(null); // 清除框選矩形顯示
-            for (UMLObject obj : canvas.getObjects()) { // 遍歷所有物件
+            context.getInteractionState().setRubberBand(null); // 清除框選矩形顯示
+            for (UMLObject obj : context.getDocument().getObjects()) { // 遍歷所有物件
                 if (HitTestUtil.isCompletelyInside(obj.getBounds(), sel)) { // 若物件完全在框選範圍內
-                    canvas.getSelectionModel().addToSelection(obj); // 選取該物件
+                    context.getSelectionModel().addToSelection(obj); // 選取該物件
                 }
             }
-            canvas.repaint(); // 重繪以顯示選取狀態
+            context.repaintCanvas(); // 重繪以顯示選取狀態
         }
 
         subState    = SubState.IDLE; // 重置子狀態為 IDLE
@@ -167,20 +168,14 @@ public class SelectStrategy implements CanvasMouseStrategy { // 選取策略，�
         fixedAnchor = null; // 清除錨點
     }
 
-    // ── mouseMoved (hover) ────────────────────────────────
-    @Override
-    public void onMoved(MouseEvent e, CanvasPanel canvas) { // 滑鼠移動（未按下）：更新懸停狀態（Use Case C）
-        canvas.updateHoverAt(e.getX(), e.getY()); // 委派畫布統一維護懸停狀態與重繪
-    }
-
     // ── mouseClicked (single-click select) ───────────────
     @Override
-    public void onClicked(MouseEvent e, CanvasPanel canvas) { // 滑鼠點擊（Use Case C：單點選取）
-        UMLObject hit = canvas.findObjectAt(e.getX(), e.getY()); // 找出被點擊的物件
+    public void onClicked(MouseEvent e, CanvasEditorContext context) { // 滑鼠點擊（Use Case C：單點選取）
+        UMLObject hit = context.getDocument().findObjectAt(e.getX(), e.getY()); // 找出被點擊的物件
         if (hit == null) return; // 若點擊空白處則忽略
-        canvas.getSelectionModel().selectOnly(hit); // 選取被點擊的物件
-        canvas.bringToFront(hit); // 將物件移到最上層
-        canvas.repaint(); // 重繪
+        context.getSelectionModel().selectOnly(hit); // 選取被點擊的物件
+        context.getDocument().bringToFront(hit); // 將物件移到最上層
+        context.repaintCanvas(); // 重繪
     }
 
     // ── Resize helper ─────────────────────────────────────

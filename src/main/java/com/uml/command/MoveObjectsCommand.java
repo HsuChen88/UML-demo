@@ -2,7 +2,7 @@ package com.uml.command;
 
 import com.uml.model.DiagramDocument;
 import com.uml.model.DiagramSelectionModel;
-import com.uml.model.UMLObject;
+import com.uml.model.object.UMLObject;
 
 import java.awt.Point;
 import java.util.LinkedHashMap;

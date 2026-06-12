@@ -1,4 +1,4 @@
-package com.uml.model;
+package com.uml.model.object;
 
 import com.uml.util.UMLConstants;
 

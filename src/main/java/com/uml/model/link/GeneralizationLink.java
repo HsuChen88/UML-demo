@@ -1,6 +1,5 @@
 package com.uml.model.link;
 
-import com.uml.model.BasicObject;
 import com.uml.model.PortReference;
 import com.uml.util.UMLConstants;
 
@@ -11,11 +10,6 @@ public class GeneralizationLink extends LinkObject { // 繼承連線：實線 + 
 
     private static final int ARROW_LEN   = 16;                    // 箭頭長度（像素），比關聯線稍長以區分
     private static final double ARROW_ANGLE = Math.toRadians(22); // 箭頭半角（弧度），比關聯線稍窄
-
-    public GeneralizationLink(BasicObject source, int srcPort, // 建構子：接收起點與終點的物件及 port 索引
-                              BasicObject target, int tgtPort) {
-        super(source, srcPort, target, tgtPort);               // 委派給父類別建構子
-    }
 
     public GeneralizationLink(PortReference source, PortReference target) { // 建構子：接收起點與終點的 port reference
         super(source, target);

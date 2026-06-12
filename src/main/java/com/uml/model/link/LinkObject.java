@@ -1,7 +1,5 @@
 package com.uml.model.link;
 
-import com.uml.model.BasicObject;
-import com.uml.model.PortOwner;
 import com.uml.model.PortReference;
 import com.uml.util.UMLConstants;
 
@@ -11,11 +9,6 @@ public abstract class LinkObject { // 所有連線物件的抽象基底類別
 
     protected final PortReference source; // 連線的起點 port reference（儲存物件參考而非座標，確保物件移動後連線跟著更新）
     protected final PortReference target; // 連線的終點 port reference
-
-    public LinkObject(BasicObject source, int sourcePortIndex, // 建構子：接收起點與終點的物件及 port 索引
-                      BasicObject target, int targetPortIndex) {
-        this(new PortReference(source, sourcePortIndex), new PortReference(target, targetPortIndex));
-    }
 
     public LinkObject(PortReference source, PortReference target) { // 建構子：接收起點與終點的 port reference
         this.source = source;
@@ -41,8 +34,6 @@ public abstract class LinkObject { // 所有連線物件的抽象基底類別
         return Math.atan2(to.y - from.y, to.x - from.x); // 使用 atan2 計算向量角度（考慮四個象限）
     }
 
-    public PortOwner getSource() { return source.owner(); } // 取得連線起點物件
-    public PortOwner getTarget() { return target.owner(); } // 取得連線終點物件
     public PortReference getSourceReference() { return source; } // 取得連線起點 port reference
     public PortReference getTargetReference() { return target; } // 取得連線終點 port reference
 }

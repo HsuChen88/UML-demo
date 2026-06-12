@@ -1,5 +1,7 @@
 package com.uml.model;
 
+import com.uml.model.object.UMLObject;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -9,7 +11,7 @@ import java.util.Set;
 public class DiagramSelectionModel { // 管理 diagram 的選取狀態，避免選取成為 UMLObject 的核心資料
 
     private final DiagramDocument document; // selection 所屬的 diagram document
-    private final Set<UMLObject> selectedObjects = new LinkedHashSet<>(); // 保留選取順序
+    private final Set<UMLObject> selectedObjects = new LinkedHashSet<>(); // 目前選取的物件集合
 
     public DiagramSelectionModel(DiagramDocument document) { // 建構子：綁定一份 document
         this.document = document;
@@ -19,7 +21,6 @@ public class DiagramSelectionModel { // 管理 diagram 的選取狀態，避免�
         clearSelection();
         if (obj != null) {
             selectedObjects.add(obj);
-            obj.setSelected(true);
         }
     }
 
@@ -31,18 +32,14 @@ public class DiagramSelectionModel { // 管理 diagram 的選取狀態，避免�
     public void addToSelection(UMLObject obj) { // 將物件加入選取集合
         if (obj == null) return;
         selectedObjects.add(obj);
-        obj.setSelected(true);
     }
 
     public void removeFromSelection(UMLObject obj) { // 將物件自選取集合移除
         if (obj == null) return;
         selectedObjects.remove(obj);
-        obj.setSelected(false);
     }
 
-    public void clearSelection() { // 清除所有選取，並同步舊有 selected flag
-        selectedObjects.forEach(o -> o.setSelected(false));
-        document.getObjects().forEach(o -> o.setSelected(false));
+    public void clearSelection() { // 清除所有選取
         selectedObjects.clear();
     }
 
@@ -53,7 +50,7 @@ public class DiagramSelectionModel { // 管理 diagram 的選取狀態，避免�
     public List<UMLObject> getSelectedObjects() { // 回傳目前選取物件清單
         List<UMLObject> visibleSelected = new ArrayList<>();
         for (UMLObject obj : document.getObjects()) {
-            if (selectedObjects.contains(obj) || obj.isSelected()) visibleSelected.add(obj);
+            if (selectedObjects.contains(obj)) visibleSelected.add(obj);
         }
         return visibleSelected;
     }

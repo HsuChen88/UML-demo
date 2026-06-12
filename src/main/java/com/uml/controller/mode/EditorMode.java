@@ -1,4 +1,4 @@
-package com.uml.controller;
+package com.uml.controller.mode;
 
 public enum EditorMode { // 列舉所有可能的編輯器模式（State Pattern 的狀態定義）
     SELECT,         // 選取模式：可點選、拖曳、框選、縮放物件

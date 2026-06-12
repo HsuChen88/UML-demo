@@ -1,6 +1,5 @@
 package com.uml.model.link;
 
-import com.uml.model.BasicObject;
 import com.uml.model.PortReference;
 
 import java.awt.*;
@@ -10,11 +9,6 @@ public class CompositionLink extends LinkObject { // 組合連線：實線 + 目
 
     private static final int DIAMOND_LEN = 14;                   // 菱形半長（從頂點到中心的距離，像素）
     private static final double HALF_ANGLE = Math.toRadians(20); // 菱形半角（弧度），控制菱形的寬窄
-
-    public CompositionLink(BasicObject source, int srcPort, // 建構子：接收起點與終點的物件及 port 索引
-                           BasicObject target, int tgtPort) {
-        super(source, srcPort, target, tgtPort);            // 委派給父類別建構子
-    }
 
     public CompositionLink(PortReference source, PortReference target) { // 建構子：接收起點與終點的 port reference
         super(source, target);

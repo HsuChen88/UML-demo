@@ -1,10 +1,10 @@
 package com.uml.view;
 
 import com.uml.command.SetLabelCommand;
-import com.uml.controller.ModeManager;
+import com.uml.controller.mode.ModeManager;
 import com.uml.controller.tool.EditorToolRegistry;
-import com.uml.model.BasicObject;
-import com.uml.model.UMLObject;
+import com.uml.model.object.BasicObject;
+import com.uml.model.object.UMLObject;
 
 import javax.swing.*;
 import java.awt.*;
@@ -112,15 +112,10 @@ public class MainFrame extends JFrame { // 頂層視窗，負責組裝所有 UI 
             String afterName  = dlg.getLabelName(); // 取得使用者輸入的新標籤文字
             Color  afterColor = dlg.getLabelColor(); // 取得使用者選擇的新顏色
 
-            // Apply change to model
-            bo.setLabelName(afterName.isBlank() ? null : afterName); // 套用新標籤文字（空白則設為 null 清除標籤）
-            bo.setLabelColor(afterColor); // 套用新顏色
-            canvasPanel.repaint(); // 重繪畫布
-
             // Record for undo (use the same normalised name stored in model)
-            canvasPanel.pushHistory(new SetLabelCommand( // 推入標籤命令到歷史（供 Undo 使用）
+            canvasPanel.execute(new SetLabelCommand( // 執行標籤命令並推入歷史（供 Undo 使用）
                     canvasPanel.getDocument(), bo, beforeName, beforeColor, // 傳入前後狀態
-                    bo.getLabelName(), afterColor)); // 使用 model 中已正規化的名稱（null 而非空字串）
+                    afterName.isBlank() ? null : afterName, afterColor)); // 使用正規化名稱（null 而非空字串）
         }
     }
 }

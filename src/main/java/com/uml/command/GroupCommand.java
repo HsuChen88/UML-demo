@@ -1,9 +1,9 @@
 package com.uml.command;
 
-import com.uml.model.CompositeObject;
 import com.uml.model.DiagramDocument;
 import com.uml.model.DiagramSelectionModel;
-import com.uml.model.UMLObject;
+import com.uml.model.object.CompositeObject;
+import com.uml.model.object.UMLObject;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -51,7 +51,6 @@ public class GroupCommand implements Command { // 群組命令（Use Case D 群�
     public void redo() { // 重做：重新群組化（將子物件替換為複合物件）
         removeChildrenFromDocument(); // 從 document 移除所有子物件
         document.addObjectAt(compositeIndex, composite); // 將複合物件加入指定 z-order
-        children.forEach(o -> o.setSelected(false)); // 子物件已移出 document，需手動清除選取旗標
         selectionModel.selectOnly(composite); // 選取複合物件
     }
 

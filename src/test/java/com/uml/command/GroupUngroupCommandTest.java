@@ -1,10 +1,10 @@
 package com.uml.command;
 
-import com.uml.model.CompositeObject;
 import com.uml.model.DiagramDocument;
 import com.uml.model.DiagramSelectionModel;
-import com.uml.model.RectObject;
-import com.uml.model.UMLObject;
+import com.uml.model.object.CompositeObject;
+import com.uml.model.object.RectObject;
+import com.uml.model.object.UMLObject;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

@@ -1,5 +1,6 @@
-package com.uml.model;
+package com.uml.model.object;
 
+import com.uml.model.PortOwner;
 import com.uml.util.HitTestUtil;
 import com.uml.util.UMLConstants;
 
@@ -26,9 +27,8 @@ public abstract class BasicObject extends UMLObject implements PortOwner { // �
     @Override
     public void draw(Graphics2D g) { // Template Method：定義繪製流程，子類別實作各步驟
         drawShape(g);                                   // 1. 繪製物件形狀（矩形或橢圓）
-        if (isSelected() || isHovered()) drawPorts(g);  // 2. 若選取或懸停則繪製 port 把手
         String name = getLabelName();
-        if (name != null && !name.isBlank()) drawLabel(g); // 3. 若有標籤文字則繪製標籤
+        if (name != null && !name.isBlank()) drawLabel(g); // 2. 若有標籤文字則繪製標籤
     }
 
     @Override
@@ -78,18 +78,14 @@ public abstract class BasicObject extends UMLObject implements PortOwner { // �
     }
 
     // ── Resize constraint API (UC-F) ─────────────────────
-    public ResizeConstraint getResizeConstraint(int portIndex) { // 取得指定 port 的縮放軸鎖定規則（預設兩軸均可）
-        return ResizeConstraint.NONE;                            // 預設不鎖定任何軸（子類別可覆寫）
-    }
+    public abstract ResizeConstraint getResizeConstraint(int portIndex); // 取得指定 port 的縮放軸鎖定規則，由具體形狀定義
 
-    public Point getResizeAnchor(int portIndex) { // 取得指定 port 的縮放錨點（預設左上角）
-        return new Point(getX(), getY());         // 預設回傳左上角（子類別應覆寫以回傳正確的對角位置）
-    }
+    public abstract Point getResizeAnchor(int portIndex); // 取得指定 port 的縮放錨點，由具體形狀定義
 
     // ── Drawing helpers ───────────────────────────────────
     protected abstract void drawShape(Graphics2D g); // 抽象方法：由子類別實作具體形狀的繪製
 
-    protected void drawPorts(Graphics2D g) { // 繪製所有 port 把手（小黑色方塊）
+    public void drawPorts(Graphics2D g) { // 繪製所有 port 把手（小黑色方塊）
         g.setColor(Color.BLACK); // 設定 port 顏色為黑色
         int half = UMLConstants.PORT_SIZE / 2; // 計算 port 方塊的半邊長
         for (Point p : getPorts()) { // 遍歷所有 port

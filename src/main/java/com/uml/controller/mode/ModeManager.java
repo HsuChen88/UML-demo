@@ -1,4 +1,4 @@
-package com.uml.controller;
+package com.uml.controller.mode;
 
 import java.util.ArrayList;
 import java.util.List;

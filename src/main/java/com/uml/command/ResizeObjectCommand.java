@@ -1,8 +1,8 @@
 package com.uml.command;
 
-import com.uml.model.BasicObject;
 import com.uml.model.DiagramDocument;
 import com.uml.model.DiagramSelectionModel;
+import com.uml.model.object.BasicObject;
 
 /**
  * Records a resize operation on a single BasicObject.

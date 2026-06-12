@@ -1,5 +1,8 @@
 package com.uml.model;
 
+import com.uml.model.object.OvalObject;
+import com.uml.model.object.RectObject;
+import com.uml.model.object.UMLObject;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -20,8 +23,8 @@ class DiagramSelectionModelTest {
         selectionModel.selectOnly(first);
         selectionModel.selectOnly(second);
 
-        assertFalse(first.isSelected());
-        assertTrue(second.isSelected());
+        assertFalse(selectionModel.isSelected(first));
+        assertTrue(selectionModel.isSelected(second));
         assertEquals(List.of(second), selectionModel.getSelectedObjects());
     }
 
@@ -36,13 +39,13 @@ class DiagramSelectionModelTest {
 
         selectionModel.selectAll(List.of(first, second));
 
-        assertTrue(first.isSelected());
-        assertTrue(second.isSelected());
+        assertTrue(selectionModel.isSelected(first));
+        assertTrue(selectionModel.isSelected(second));
 
         selectionModel.clearSelection();
 
-        assertFalse(first.isSelected());
-        assertFalse(second.isSelected());
+        assertFalse(selectionModel.isSelected(first));
+        assertFalse(selectionModel.isSelected(second));
         assertTrue(selectionModel.getSelectedObjects().isEmpty());
     }
 }

@@ -1,6 +1,4 @@
-package com.uml.model;
-
-import com.uml.util.UMLConstants;
+package com.uml.model.object;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -27,19 +25,8 @@ public class CompositeObject extends UMLObject { // 複合物件（群組容器�
     }
 
     @Override
-    public void draw(Graphics2D g) { // 繪製群組：先繪製所有子物件，選取/hover 時再繪製群組外框
-        children.forEach(c -> c.draw(g)); // 依序繪製每個子物件（子物件依自身 selected/hovered 決定是否顯示 port）
-
-        if (isSelected() || isHovered()) { // 若群組被選取或懸停：僅顯示外框，不顯示任何 ports
-            Rectangle b   = getBounds();
-            int       pad = UMLConstants.COMPOSITE_PAD;
-            float[]   dash = UMLConstants.DASH_COMPOSITE;
-            g.setStroke(new BasicStroke(UMLConstants.STROKE_NORMAL,
-                    BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10f, dash, 0f));
-            g.setColor(Color.DARK_GRAY);
-            g.drawRect(b.x - pad, b.y - pad, b.width + pad * 2, b.height + pad * 2);
-            g.setStroke(new BasicStroke(UMLConstants.STROKE_THIN)); // 重置畫筆，避免影響後續繪製
-        }
+    public void draw(Graphics2D g) { // 繪製群組：先繪製所有子物件，選取/hover 外框由 renderer 根據互動狀態處理
+        children.forEach(c -> c.draw(g)); // 依序繪製每個子物件（互動視覺由 renderer 根據 CanvasRenderContext 處理）
     }
 
     @Override

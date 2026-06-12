@@ -1,7 +1,7 @@
 package com.uml.controller.tool;
 
-import com.uml.controller.EditorMode;
-import com.uml.controller.ModeManager;
+import com.uml.controller.mode.EditorMode;
+import com.uml.controller.mode.ModeManager;
 import com.uml.controller.strategy.CanvasMouseStrategy;
 import org.junit.jupiter.api.Test;
 

@@ -1,7 +1,7 @@
 package com.uml.controller.tool;
 
-import com.uml.controller.EditorMode;
-import com.uml.controller.ModeManager;
+import com.uml.controller.mode.EditorMode;
+import com.uml.controller.mode.ModeManager;
 import com.uml.controller.strategy.CanvasMouseStrategy;
 
 import javax.swing.*;
@@ -15,7 +15,7 @@ public record EditorToolDefinition(EditorMode mode,
                                    DiagramObjectFactory objectFactory,
                                    DiagramLinkFactory linkFactory) { // 一個編輯器工具的完整定義
 
-    public CanvasMouseStrategy createStrategy(ModeManager modeManager) { // 建立此工具對應的滑鼠策略
+    public CanvasMouseStrategy createStrategy(ModeManager modeManager) { // 建立此工具對應的滑鼠 strategy 
         return strategyFactory.apply(modeManager);
     }
 }

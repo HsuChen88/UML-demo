@@ -1,7 +1,7 @@
 package com.uml.command;
 
-import com.uml.model.BasicObject;
 import com.uml.model.DiagramDocument;
+import com.uml.model.object.BasicObject;
 
 import java.awt.Color;
 

@@ -1,8 +1,8 @@
 package com.uml.view;
 
-import com.uml.controller.EditorMode;
-import com.uml.controller.ModeChangeListener;
-import com.uml.controller.ModeManager;
+import com.uml.controller.mode.EditorMode;
+import com.uml.controller.mode.ModeChangeListener;
+import com.uml.controller.mode.ModeManager;
 import com.uml.controller.tool.EditorToolDefinition;
 import com.uml.controller.tool.EditorToolRegistry;
 import com.uml.util.UMLConstants;
@@ -104,102 +104,4 @@ public class ButtonPanel extends JPanel implements ModeChangeListener { // 左�
         }
     }
 
-    //
-    // Icon implementations
-    // --------------------------------------------------------------------------------------------------------------------------------------------------
-
-    private static abstract class BaseIcon implements Icon { // 所有工具圖示的抽象基底類別，定義共用尺寸與畫筆準備方法
-        @Override public int getIconWidth()  { return UMLConstants.ICON_SIZE; } // 圖示寬度（像素）
-        @Override public int getIconHeight() { return UMLConstants.ICON_SIZE; } // 圖示高度（像素）
-
-        Graphics2D prepare(Graphics g, int x, int y) { // 建立 Graphics2D 副本並平移原點到圖示左上角
-            Graphics2D g2 = (Graphics2D) g.create(); // 建立獨立的 Graphics2D 副本
-            g2.translate(x, y); // 平移座標系原點到圖示的左上角
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, // 開啟反鋸齒
-                                RenderingHints.VALUE_ANTIALIAS_ON);
-            return g2; // 回傳已設定好的畫筆
-        }
-    }
-
-    /** Cursor / pointer arrow */
-    private static class SelectIcon extends BaseIcon { // 選取工具圖示（游標箭頭形狀）
-        @Override
-        public void paintIcon(Component c, Graphics g, int x, int y) { // 繪製游標箭頭多邊形
-            Graphics2D g2 = prepare(g, x, y); // 準備畫筆
-            g2.setColor(UMLConstants.ICON_DARK); // 設定顏色為深灰
-            int[] px = { 3,  3,  7, 10, 12,  9, 15}; // 箭頭多邊形的 x 座標陣列
-            int[] py = { 2, 17, 13, 19, 18, 12, 12}; // 箭頭多邊形的 y 座標陣列
-            g2.fillPolygon(px, py, px.length); // 填充游標箭頭形狀
-            g2.dispose();   // 釋放暫時畫筆
-        }
-    }
-
-    /** Solid left-pointing arrow  ← */
-    private static class AssociationIcon extends BaseIcon { // 關聯線工具圖示（實心箭頭）
-        @Override
-        public void paintIcon(Component c, Graphics g, int x, int y) { // 繪製直線 + 實心三角形箭頭
-            Graphics2D g2 = prepare(g, x, y); // 準備畫筆
-            g2.setColor(UMLConstants.ICON_DARK); // 設定顏色
-            g2.setStroke(new BasicStroke(1.8f)); // 設定線寬
-            g2.drawLine(19, 12, 8, 12); // 繪製水平直線（從右到左）
-            int[] px = {8, 14, 14}; // 箭頭三角形的 x 座標陣列
-            int[] py = {12, 8, 16}; // 箭頭三角形的 y 座標陣列
-            g2.fillPolygon(px, py, px.length);  // fill 實心填滿
-            g2.dispose();   // 釋放暫時畫筆
-        }
-    }
-
-    /** Open/hollow triangle arrowhead  ⇐ */
-    private static class GeneralizationIcon extends BaseIcon { // 繼承線工具圖示（空心三角形箭頭）
-        @Override
-        public void paintIcon(Component c, Graphics g, int x, int y) { // 繪製直線 + 空心三角形箭頭
-            Graphics2D g2 = prepare(g, x, y); // 準備畫筆
-            g2.setColor(UMLConstants.ICON_DARK); // 設定顏色
-            g2.setStroke(new BasicStroke(1.6f)); // 設定線寬
-            g2.drawLine(19, 12, 13, 12); // 繪製水平直線（從右到三角形底部）
-            int[] px = {8, 14, 14}; // 箭頭三角形的 x 座標陣列
-            int[] py = {12, 8, 16}; // 箭頭三角形的 y 座標陣列
-            g2.drawPolygon(px, py, px.length);  // draw 只有線條（空心效果）
-            g2.dispose();   // 釋放暫時畫筆
-        }
-    }
-
-    /**
-     * Hollow diamond + right line  ◇-
-     */
-    private static class CompositionIcon extends BaseIcon { // 組合線工具圖示（菱形 + 直線）
-        @Override
-        public void paintIcon(Component c, Graphics g, int x, int y) { // 繪製菱形 + 水平直線
-            Graphics2D g2 = prepare(g, x, y); // 準備畫筆
-            g2.setColor(UMLConstants.ICON_DARK); // 設定顏色
-            g2.setStroke(new BasicStroke(1.6f)); // 設定線寬
-            int[] dpx = {2, 7, 12, 7}; // 菱形四個頂點的 x 座標（左、上、右、下）
-            int[] dpy = {12, 8, 12, 16}; // 菱形四個頂點的 y 座標
-            g2.drawPolygon(dpx, dpy, dpx.length); // 繪製菱形外框（空心）
-            g2.drawLine(12, 12, 22, 12); // 繪製菱形右側的水平直線
-            g2.dispose();   // 釋放暫時畫筆
-        }
-    }
-
-    /** Filled gray rectangle */
-    private static class RectIcon extends BaseIcon { // 矩形工具圖示（填色矩形）
-        @Override
-        public void paintIcon(Component c, Graphics g, int x, int y) { // 繪製填色矩形
-            Graphics2D g2 = prepare(g, x, y); // 準備畫筆
-            g2.setColor(new Color(130, 130, 130)); // 設定填色為中灰
-            g2.fillRect(3, 5, 18, 14); // 繪製填色矩形（位置、尺寸）
-            g2.dispose();   // 釋放暫時畫筆
-        }
-    }
-
-    /** Filled gray ellipse */
-    private static class OvalIcon extends BaseIcon { // 橢圓工具圖示（填色橢圓）
-        @Override
-        public void paintIcon(Component c, Graphics g, int x, int y) { // 繪製填色橢圓
-            Graphics2D g2 = prepare(g, x, y); // 準備畫筆
-            g2.setColor(new Color(150, 150, 150)); // 設定填色為淺灰
-            g2.fillOval(2, 2, 20, 20); // 繪製填色橢圓（位置、尺寸）
-            g2.dispose();   // 釋放暫時畫筆
-        }
-    }
 }

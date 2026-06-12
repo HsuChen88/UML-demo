@@ -1,7 +1,7 @@
 package com.uml.view.renderer;
 
 import com.uml.model.link.LinkObject;
-import com.uml.model.UMLObject;
+import com.uml.model.object.UMLObject;
 
 import java.awt.*;
 
